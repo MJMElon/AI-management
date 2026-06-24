@@ -16,6 +16,19 @@ create table if not exists profiles (
   created_at  timestamptz not null default now()
 );
 
+-- Heal an older/pre-existing profiles table that may be missing columns
+-- (otherwise `create table if not exists` above silently does nothing).
+alter table profiles add column if not exists name       text;
+alter table profiles add column if not exists department text default 'operation';
+alter table profiles add column if not exists created_at timestamptz default now();
+do $$
+begin
+  alter table profiles add constraint profiles_department_check
+    check (department in ('operation','management','it','admin'));
+exception
+  when duplicate_object then null;  -- constraint already present
+end $$;
+
 -- Auto-create a profile when a new auth user signs up.
 create or replace function handle_new_user()
 returns trigger language plpgsql security definer as $$
