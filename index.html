@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <style>
   :root{
@@ -42,6 +43,15 @@
   .roleswitch button{border:0;background:transparent;color:#bcd8cb;font-size:12.5px;font-weight:600;
     padding:6px 11px;border-radius:7px;transition:.15s}
   .roleswitch button[data-on="1"]{background:#eaf3ee;color:var(--forest)}
+  .iconbtn{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#eaf3ee;
+    font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:9px;transition:.15s}
+  .iconbtn:hover{background:rgba(255,255,255,.13)}
+  .conn{display:flex;align-items:center;gap:6px;font-size:12px;color:#bcd8cb;white-space:nowrap}
+  .conn .dot{width:7px;height:7px;border-radius:50%}
+  .conn.live .dot{background:#3ad29f;box-shadow:0 0 0 3px rgba(58,210,159,.25)}
+  .conn.demo .dot{background:#e7c75a}
+  .deptbadge{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;
+    background:rgba(255,255,255,.12);color:#eaf3ee}
 
   /* layout */
   .wrap{max-width:1180px;margin:0 auto;padding:24px 22px 80px}
@@ -55,8 +65,20 @@
   .muted{color:var(--ink-2)}
   .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
 
+  /* stats + filters */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 17px;border-bottom:1px solid var(--line)}
+  .stat{background:#f6f8f6;border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+  .stat .n{font-family:"Space Grotesk";font-weight:700;font-size:19px;line-height:1.1}
+  .stat .l{font-size:10px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
+  .filterbar{padding:12px 17px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;color:var(--ink-2);font-size:12px;font-weight:600;
+    padding:5px 10px;border-radius:999px;transition:.12s}
+  .chip:hover{border-color:#c6d0c9}
+  .chip[data-on="1"]{background:var(--forest);border-color:var(--forest);color:#eaf3ee}
+
   /* proposal list */
-  .plist{display:flex;flex-direction:column}
+  .plist{display:flex;flex-direction:column;max-height:62vh;overflow-y:auto}
   .pcard{display:block;width:100%;text-align:left;border:0;background:transparent;
     padding:14px 17px;border-bottom:1px solid var(--line);transition:.12s}
   .pcard:last-child{border-bottom:0}
@@ -159,13 +181,34 @@
   .pill{font-size:11.5px;font-weight:600;color:var(--ink-2);background:#eef2ef;border-radius:999px;padding:3px 9px}
   .banner{font-size:12.5px;background:var(--amber-soft);color:#7a560a;border:1px solid #eccf94;
     border-radius:10px;padding:9px 12px;margin:0 22px}
+  .errbar{font-size:12.5px;background:var(--rose-soft);color:#7a1020;border:1px solid #e8b9c2;
+    border-radius:10px;padding:9px 12px;margin:14px 22px 0}
+
+  /* auth */
+  .auth-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;
+    background:radial-gradient(1200px 600px at 50% -10%, #143f31 0%, var(--paper) 55%)}
+  .auth-card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 18px 50px rgba(13,59,46,.18);max-width:400px;width:100%;padding:26px}
+  .auth-card .brandrow{display:flex;align-items:baseline;gap:9px;margin-bottom:16px}
+  .auth-card .mark{font-family:"Space Grotesk";font-weight:700;font-size:18px;color:var(--forest)}
+  .auth-card .tag{font-size:12px;color:var(--ink-2)}
+  .auth-card h1{font-size:21px;margin:0 0 4px}
+  .auth-card p.sub{margin:0 0 18px;color:var(--ink-2);font-size:13.5px}
+  .auth-field{margin-bottom:12px}
+  .auth-err{background:var(--rose-soft);color:#7a1020;border:1px solid #e8b9c2;border-radius:10px;
+    padding:9px 12px;font-size:13px;margin-bottom:12px}
+  .auth-msg{background:var(--emerald-soft);color:#0c5b3c;border:1px solid #aedcc7;border-radius:10px;
+    padding:9px 12px;font-size:13px;margin-bottom:12px}
+  .auth-toggle{margin-top:14px;font-size:13px;color:var(--ink-2);text-align:center}
+  .auth-toggle button{border:0;background:none;color:var(--emerald);font-weight:600;padding:0}
+  .loading{padding:90px 24px;text-align:center;color:var(--ink-2);font-size:14px}
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel" data-presets="env,react">
-const { useState, useEffect, useRef, useMemo } = React;
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
 /* ---------- safe storage (works on GitHub Pages, falls back in sandboxes) ---------- */
 const store = (() => {
@@ -176,6 +219,7 @@ const store = (() => {
   return {
     get(k){ try { return ok ? window.localStorage.getItem(k) : mem[k] ?? null; } catch(e){ return mem[k] ?? null; } },
     set(k,v){ try { ok ? window.localStorage.setItem(k,v) : (mem[k]=v); } catch(e){ mem[k]=v; } },
+    del(k){ try { ok ? window.localStorage.removeItem(k) : delete mem[k]; } catch(e){ delete mem[k]; } },
   };
 })();
 
@@ -241,12 +285,13 @@ const ACTIONS = {
 
 const uid = () => Math.random().toString(36).slice(2,9);
 const now = () => Date.now();
+const iso = () => new Date().toISOString();
 const fmtDate = t => new Date(t).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
 const fmtHrs = secs => { const h=Math.floor(secs/3600), m=Math.floor(secs%3600/60); return `${h}h ${String(m).padStart(2,"0")}m`; };
 const fmtClock = secs => { const h=Math.floor(secs/3600),m=Math.floor(secs%3600/60),s=Math.floor(secs%60);
   return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`; };
 
-/* ---------- seed data ---------- */
+/* ---------- seed data (demo mode only) ---------- */
 function seed(){
   const t = now();
   const day = 86400000;
@@ -288,67 +333,285 @@ function seed(){
   ];
 }
 
-/* ---------- app ---------- */
+/* ============================================================
+   DATA LAYER
+   Both APIs expose the same async surface so <App> never branches:
+     load(), create(data,me), action(p,a,note,me,role),
+     comment(p,body,me,role), toggleTimer(p,me)
+   Each resolves to the fresh proposals array.
+   ============================================================ */
+
+/* ---- demo: localStorage-backed, seeded ---- */
+function makeDemoApi(){
+  const read = () => {
+    try { const r = store.get("vp_data"); if(r) return JSON.parse(r); } catch(e){}
+    const s = seed(); store.set("vp_data", JSON.stringify(s)); return s;
+  };
+  const write = arr => { store.set("vp_data", JSON.stringify(arr)); return arr; };
+  return {
+    mode:"demo",
+    async load(){ return read(); },
+    async create(data, me){
+      const p = { id:uid(), ...data, status:"draft", createdBy:me, createdAt:now(),
+        comments:[], history:[{to:"draft",by:me,at:now(),note:""}], sessions:[], running:null };
+      return write([p, ...read()]);
+    },
+    async action(p, action, note, me, role){
+      return write(read().map(x => {
+        if(x.id !== p.id) return x;
+        const d = {...x};
+        if(d.running && !(S[action.to]?.timer)){ d.sessions=[...d.sessions,{id:uid(),start:d.running,end:now()}]; d.running=null; }
+        d.status = action.to;
+        d.history = [...d.history, {to:action.to, by:me, at:now(), note}];
+        if(note) d.comments = [...d.comments, {id:uid(), by:me, role, at:now(), body:note}];
+        return d;
+      }));
+    },
+    async comment(p, body, me, role){
+      return write(read().map(x => x.id===p.id
+        ? {...x, comments:[...x.comments, {id:uid(), by:me, role, at:now(), body}]} : x));
+    },
+    async toggleTimer(p){
+      return write(read().map(x => {
+        if(x.id !== p.id) return x;
+        const d = {...x};
+        if(d.running){ d.sessions=[...d.sessions,{id:uid(),start:d.running,end:now()}]; d.running=null; }
+        else d.running = now();
+        return d;
+      }));
+    },
+  };
+}
+
+/* ---- live: Supabase ---- */
+function mapProposal(row, names, dept, cBy, hBy, sBy){
+  const sessions = sBy[row.id] || [];
+  const open = sessions.find(s => !s.ended_at);
+  return {
+    id: row.id, title: row.title, problem: row.problem, benefit: row.benefit,
+    est: Number(row.est_hours) || 0, prio: row.priority, cat: row.category, tools: row.tools || "",
+    status: row.status,
+    createdBy: names[row.created_by] || "Someone", createdAt: new Date(row.created_at).getTime(),
+    comments: (cBy[row.id] || []).map(c => ({
+      id:c.id, by:names[c.author_id] || "?", role:dept[c.author_id] || "operation",
+      at:new Date(c.created_at).getTime(), body:c.body })),
+    history: (hBy[row.id] || []).map(h => ({
+      to:h.to_status, by:names[h.actor_id] || "?", at:new Date(h.created_at).getTime(), note:h.note || "" })),
+    sessions: sessions.filter(s => s.ended_at).map(s => ({
+      id:s.id, start:new Date(s.started_at).getTime(), end:new Date(s.ended_at).getTime() })),
+    running: open ? new Date(open.started_at).getTime() : null,
+  };
+}
+
+function makeLiveApi(sb, user){
+  async function load(){
+    const [pr, pp, cm, hi, ss] = await Promise.all([
+      sb.from('profiles').select('id,name,department'),
+      sb.from('proposals').select('*').order('created_at',{ascending:false}),
+      sb.from('comments').select('*').order('created_at',{ascending:true}),
+      sb.from('status_history').select('*').order('created_at',{ascending:true}),
+      sb.from('time_sessions').select('*').order('started_at',{ascending:true}),
+    ]);
+    const firstErr = [pr,pp,cm,hi,ss].map(r=>r.error).find(Boolean);
+    if(firstErr) throw firstErr;
+    const names = {}, dept = {};
+    (pr.data || []).forEach(p => { names[p.id]=p.name; dept[p.id]=p.department; });
+    const group = (rows, k) => { const m={}; (rows||[]).forEach(r=>{ (m[r[k]]=m[r[k]]||[]).push(r); }); return m; };
+    return (pp.data || []).map(row =>
+      mapProposal(row, names, dept, group(cm.data,'proposal_id'), group(hi.data,'proposal_id'), group(ss.data,'proposal_id')));
+  }
+  return {
+    mode:"live", load,
+    async create(data){
+      const { data:rows, error } = await sb.from('proposals').insert({
+        title:data.title, problem:data.problem, benefit:data.benefit,
+        est_hours:data.est, priority:data.prio, category:data.cat, tools:data.tools || null,
+        created_by:user.id, status:'draft',
+      }).select('id').single();
+      if(error) throw error;
+      await sb.from('status_history').insert({ proposal_id:rows.id, to_status:'draft', actor_id:user.id });
+      return load();
+    },
+    async action(p, action, note){
+      if(p.running && !(S[action.to]?.timer)){
+        await sb.from('time_sessions').update({ ended_at: iso() })
+          .eq('proposal_id', p.id).is('ended_at', null);
+      }
+      const { error } = await sb.from('proposals')
+        .update({ status:action.to, updated_at: iso() }).eq('id', p.id);
+      if(error) throw error;
+      await sb.from('status_history').insert({ proposal_id:p.id, to_status:action.to, actor_id:user.id, note:note || null });
+      if(note) await sb.from('comments').insert({ proposal_id:p.id, author_id:user.id, body:note });
+      return load();
+    },
+    async comment(p, body){
+      const { error } = await sb.from('comments').insert({ proposal_id:p.id, author_id:user.id, body });
+      if(error) throw error;
+      return load();
+    },
+    async toggleTimer(p){
+      if(p.running){
+        await sb.from('time_sessions').update({ ended_at: iso() })
+          .eq('proposal_id', p.id).is('ended_at', null);
+      } else {
+        await sb.from('time_sessions').insert({ proposal_id:p.id, user_id:user.id });
+      }
+      return load();
+    },
+  };
+}
+
+/* ---------- config ---------- */
+function getCfg(){
+  const url = store.get("vp_sb_url"), key = store.get("vp_sb_key");
+  if(url && key) return { url, key };
+  if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY) return { url:window.SUPABASE_URL, key:window.SUPABASE_ANON_KEY };
+  return null;
+}
+
+/* ---------- demo role helpers ---------- */
 const ROLE_USER = {operation:"Maya Ops", management:"Grace Mgr", it:"Ivan IT", admin:"Admin User"};
 
-function App(){
-  const [role,setRole] = useState(()=> store.get("vp_role") || "operation");
-  const [props_,setProps] = useState(()=>{
-    try{ const raw=store.get("vp_data"); if(raw) return JSON.parse(raw); }catch(e){}
-    return seed();
-  });
-  const [selId,setSelId] = useState(()=> store.get("vp_sel") || null);
-  const [creating,setCreating] = useState(false);
-  const [modal,setModal] = useState(null); // {action, propId}
+/* ============================================================
+   ROOT — decides demo vs live, owns auth session.
+   ============================================================ */
+function Root(){
+  const [cfg] = useState(getCfg);
+  const [settings, setSettings] = useState(false);
+  const [role, setRole] = useState(()=> store.get("vp_role") || "operation");
+  const [session, setSession] = useState(undefined); // undefined = checking
+  const [profile, setProfile] = useState(null);
 
-  useEffect(()=>{ store.set("vp_data", JSON.stringify(props_)); },[props_]);
-  useEffect(()=>{ store.set("vp_role", role); },[role]);
-  useEffect(()=>{ if(selId) store.set("vp_sel", selId); },[selId]);
+  const sb = useMemo(
+    () => (cfg && window.supabase) ? window.supabase.createClient(cfg.url, cfg.key) : null,
+    [cfg]
+  );
+  const demoApi = useMemo(() => makeDemoApi(), []);
+  const liveApi = useMemo(
+    () => (sb && session) ? makeLiveApi(sb, session.user) : null,
+    [sb, session]
+  );
+
+  useEffect(()=>{ store.set("vp_role", role); }, [role]);
+
+  // auth session lifecycle
+  useEffect(()=>{
+    if(!cfg){ setSession(null); return; }
+    if(!sb){ setSession(null); return; }
+    sb.auth.getSession().then(({data}) => setSession(data.session || null));
+    const { data:listener } = sb.auth.onAuthStateChange((_e, s) => setSession(s || null));
+    return () => listener.subscription.unsubscribe();
+  }, [cfg, sb]);
+
+  // load profile (department doubles as role)
+  useEffect(()=>{
+    if(!sb || !session){ setProfile(null); return; }
+    let alive = true;
+    sb.from('profiles').select('id,name,department').eq('id', session.user.id).single()
+      .then(({data}) => { if(alive) setProfile(data || {id:session.user.id, name:session.user.email, department:'operation'}); });
+    return () => { alive = false; };
+  }, [sb, session]);
+
+  const modal = settings && <SettingsModal current={cfg} onClose={()=>setSettings(false)} />;
+
+  let content;
+  if(cfg){
+    if(!window.supabase){
+      content = <div className="loading">The Supabase library failed to load. Check your network and reload,
+        or <button className="btn" style={{marginLeft:8}} onClick={()=>setSettings(true)}>open settings</button>.</div>;
+    } else if(session === undefined || (session && !profile)){
+      content = <div className="loading">Connecting…</div>;
+    } else if(!session){
+      content = <Auth sb={sb} onOpenSettings={()=>setSettings(true)} />;
+    } else {
+      content = <App mode="live" me={profile.name} role={profile.department} api={liveApi} sb={sb}
+        onSignOut={()=>sb.auth.signOut()} onOpenSettings={()=>setSettings(true)} />;
+    }
+  } else {
+    content = <App mode="demo" me={ROLE_USER[role]} role={role} setRole={setRole} api={demoApi}
+      onOpenSettings={()=>setSettings(true)} />;
+  }
+
+  return <React.Fragment>{content}{modal}</React.Fragment>;
+}
+
+/* ---------- app ---------- */
+function App({mode, me, role, setRole, api, sb, onSignOut, onOpenSettings}){
+  const [props_, setProps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
+  const [selId, setSelId] = useState(()=> store.get("vp_sel") || null);
+  const [creating, setCreating] = useState(false);
+  const [modal, setModal] = useState(null); // {action, propId}
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState("all"); // all | active | waiting | closed
+
+  const reload = useCallback(async () => {
+    try { setErr(null); setProps(await api.load()); }
+    catch(e){ setErr(e.message || String(e)); }
+  }, [api]);
+
+  useEffect(()=>{ setLoading(true); reload().finally(()=>setLoading(false)); }, [reload]);
+
+  // realtime: any change in the workflow tables refreshes the board
+  useEffect(()=>{
+    if(mode !== "live" || !sb) return;
+    const ch = sb.channel('vp-realtime');
+    ['proposals','comments','status_history','time_sessions'].forEach(t =>
+      ch.on('postgres_changes', {event:'*', schema:'public', table:t}, () => { reload(); }));
+    ch.subscribe();
+    return () => { sb.removeChannel(ch); };
+  }, [mode, sb, reload]);
+
+  useEffect(()=>{ if(selId) store.set("vp_sel", selId); }, [selId]);
 
   const sel = props_.find(p=>p.id===selId) || null;
-  const me = ROLE_USER[role];
+  const canAct = (p) => role==="admin" || S[p.status]?.owner===role;
+  const canCreate = role==="operation" || role==="admin";
 
-  const update = (id, fn) => setProps(ps => ps.map(p => p.id===id ? fn({...p}) : p));
-
-  const applyAction = (p, action, note="") => {
-    update(p.id, d => {
-      // stop any running timer when leaving a timer stage
-      if(d.running && !(S[action.to]?.timer)){
-        d.sessions = [...d.sessions, {id:uid(), start:d.running, end:now()}];
-        d.running = null;
-      }
-      d.status = action.to;
-      d.history = [...d.history, {to:action.to, by:me, at:now(), note}];
-      if(note) d.comments = [...d.comments, {id:uid(), by:me, role, at:now(), body:note}];
-      return d;
-    });
-  };
-
+  const applyAction = async (p, action, note="") => { setProps(await api.action(p, action, note, me, role)); };
   const onAction = (p, action) => {
     if(action.needsComment){ setModal({action, propId:p.id}); return; }
     applyAction(p, action);
   };
-
-  const addComment = (p, body) => update(p.id, d => {
-    d.comments = [...d.comments, {id:uid(), by:me, role, at:now(), body}];
-    return d;
-  });
-
-  const toggleTimer = (p) => update(p.id, d => {
-    if(d.running){ d.sessions=[...d.sessions,{id:uid(),start:d.running,end:now()}]; d.running=null; }
-    else { d.running = now(); }
-    return d;
-  });
-
-  const canAct = (p) => role==="admin" || S[p.status]?.owner===role;
-
-  const createProposal = (data) => {
-    const p = {
-      id:uid(), ...data, status:"draft", createdBy:me, createdAt:now(),
-      comments:[], history:[{to:"draft",by:me,at:now(),note:""}], sessions:[], running:null,
-    };
-    setProps(ps=>[p,...ps]); setSelId(p.id); setCreating(false);
+  const addComment  = async (p, body) => { setProps(await api.comment(p, body, me, role)); };
+  const toggleTimer = async (p)       => { setProps(await api.toggleTimer(p, me)); };
+  const createProposal = async (data) => {
+    const arr = await api.create(data, me);
+    setProps(arr); setCreating(false);
+    if(arr[0]) setSelId(arr[0].id);
   };
+
+  const counts = useMemo(()=>{
+    const c = {total:props_.length, active:0, waiting:0};
+    props_.forEach(p => {
+      const st = S[p.status]; if(!st) return;
+      if(!st.terminal) c.active++;
+      const acts = ACTIONS[p.status] || [];
+      if(acts.length && (role==="admin" || st.owner===role)) c.waiting++;
+    });
+    return c;
+  }, [props_, role]);
+
+  const shown = useMemo(()=>{
+    let arr = props_;
+    if(filter==="active")  arr = arr.filter(p => !S[p.status]?.terminal);
+    else if(filter==="closed") arr = arr.filter(p => S[p.status]?.terminal);
+    else if(filter==="waiting") arr = arr.filter(p => {
+      const acts = ACTIONS[p.status] || [];
+      return acts.length && (role==="admin" || S[p.status]?.owner===role);
+    });
+    const s = q.trim().toLowerCase();
+    if(s) arr = arr.filter(p => (p.title+" "+p.problem+" "+p.cat+" "+p.createdBy).toLowerCase().includes(s));
+    return arr;
+  }, [props_, filter, q, role]);
+
+  const FILTERS = [
+    {k:"all", label:"All"},
+    {k:"active", label:"Active"},
+    {k:"waiting", label:"Awaiting you"},
+    {k:"closed", label:"Closed"},
+  ];
 
   return (
     <React.Fragment>
@@ -357,27 +620,51 @@ function App(){
           <span className="mark">Vibe Proposals</span>
           <span className="tag">idea → go-live</span>
         </div>
+        <div className={"conn "+mode}><span className="dot"></span>{mode==="live"?"Live · Supabase":"Demo mode"}</div>
         <div className="spacer"></div>
-        <div className="roleswitch" role="tablist" aria-label="Demo role">
-          {Object.keys(DEPTS).map(r=>(
-            <button key={r} data-on={role===r?"1":"0"} onClick={()=>setRole(r)}>{DEPTS[r].label.replace(" Dept.","").replace(" Team","")}</button>
-          ))}
-        </div>
-        <div className="who">viewing as<br/><b>{me}</b></div>
+        {mode==="demo"
+          ? <div className="roleswitch" role="tablist" aria-label="Demo role">
+              {Object.keys(DEPTS).map(r=>(
+                <button key={r} data-on={role===r?"1":"0"} onClick={()=>setRole(r)}>
+                  {DEPTS[r].label.replace(" Dept.","").replace(" Team","")}</button>
+              ))}
+            </div>
+          : <span className="deptbadge">{DEPTS[role]?.label || role}</span>}
+        <div className="who">{mode==="live"?"signed in as":"viewing as"}<br/><b>{me}</b></div>
+        <button className="iconbtn" onClick={onOpenSettings} title="Connect a database">⚙ Settings</button>
+        {mode==="live" && <button className="iconbtn" onClick={onSignOut}>Sign out</button>}
       </header>
 
       <div className="wrap">
+        {err && <div className="errbar" style={{margin:"0 0 16px"}}>Couldn’t reach the database: {err}</div>}
         <div className="grid">
           {/* LEFT: list */}
           <aside className="panel">
             <div className="panel-h">
               <h2>Proposals</h2>
-              {(role==="operation"||role==="admin") &&
-                <button className="btn btn-primary" style={{padding:"7px 12px"}} onClick={()=>{setCreating(true);setSelId(null);}}>+ New</button>}
+              {canCreate &&
+                <button className="btn btn-primary" style={{padding:"7px 12px"}}
+                  onClick={()=>{setCreating(true);setSelId(null);}}>+ New</button>}
+            </div>
+            <div className="stats">
+              <div className="stat"><div className="n">{counts.total}</div><div className="l">Total</div></div>
+              <div className="stat"><div className="n">{counts.active}</div><div className="l">Active</div></div>
+              <div className="stat"><div className="n">{counts.waiting}</div><div className="l">Awaiting you</div></div>
+            </div>
+            <div className="filterbar">
+              <input className="in" placeholder="Search proposals…" value={q} onChange={e=>setQ(e.target.value)} aria-label="Search proposals"/>
+              <div className="chips">
+                {FILTERS.map(f=>(
+                  <button key={f.k} className="chip" data-on={filter===f.k?"1":"0"} onClick={()=>setFilter(f.k)}>{f.label}</button>
+                ))}
+              </div>
             </div>
             <div className="plist">
-              {props_.length===0 && <div className="empty"><div className="big">No proposals yet</div>Submit the first idea to get started.</div>}
-              {props_.map(p=>{
+              {loading && <div className="empty">Loading…</div>}
+              {!loading && shown.length===0 &&
+                <div className="empty"><div className="big">{props_.length===0?"No proposals yet":"Nothing matches"}</div>
+                  {props_.length===0?"Submit the first idea to get started.":"Try a different search or filter."}</div>}
+              {!loading && shown.map(p=>{
                 const st=S[p.status];
                 return (
                   <button key={p.id} className="pcard" data-sel={selId===p.id?"1":"0"}
@@ -405,6 +692,7 @@ function App(){
 
       {modal && (() => {
         const p = props_.find(x=>x.id===modal.propId);
+        if(!p){ return null; }
         return <CommentModal action={modal.action}
           onClose={()=>setModal(null)}
           onSubmit={(note)=>{ applyAction(p, modal.action, note); setModal(null); }}/>;
@@ -422,7 +710,6 @@ function Detail({p, role, me, canAct, onAction, onToggleTimer, onComment}){
   useEffect(()=>{ if(!p.running) return; const id=setInterval(()=>tick(t=>t+1),1000); return ()=>clearInterval(id); },[p.running]);
 
   const loggedSecs = p.sessions.reduce((a,s)=>a+(s.end-s.start)/1000,0) + (p.running?(now()-p.running)/1000:0);
-  const estSecs = (p.est||0)*3600;
 
   const [draftCmt,setDraftCmt] = useState("");
 
@@ -470,7 +757,7 @@ function Detail({p, role, me, canAct, onAction, onToggleTimer, onComment}){
                 ))}
               </div>
             : <p className="muted" style={{fontSize:13.5,margin:0}}>
-                Waiting on <b>{DEPTS[st.owner].label}</b>. Switch to that role (top right) to act on this stage.
+                Waiting on <b>{DEPTS[st.owner].label}</b>.
               </p>}
         {canAct && actions.length>0 && <p className="hint">You're acting as {DEPTS[role].label}. Rejecting or sending back asks for a comment.</p>}
       </div>
@@ -554,8 +841,10 @@ function Detail({p, role, me, canAct, onAction, onToggleTimer, onComment}){
 
 function CreateForm({onCancel,onCreate}){
   const [f,setF] = useState({title:"",problem:"",benefit:"",est:8,prio:"Medium",cat:"Tooling",tools:""});
+  const [busy,setBusy] = useState(false);
   const set = (k,v)=>setF(s=>({...s,[k]:v}));
   const valid = f.title.trim() && f.problem.trim() && f.benefit.trim();
+  const submit = async () => { setBusy(true); try{ await onCreate(f); } finally { setBusy(false); } };
   return (
     <div>
       <div className="detail-top">
@@ -599,7 +888,7 @@ function CreateForm({onCancel,onCreate}){
           </div>
         </div>
         <div className="actions" style={{marginTop:18}}>
-          <button className="btn btn-primary" disabled={!valid} onClick={()=>onCreate(f)}>Create draft</button>
+          <button className="btn btn-primary" disabled={!valid||busy} onClick={submit}>{busy?"Creating…":"Create draft"}</button>
           <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
         </div>
         {!valid && <p className="hint">Title, problem, and benefit are required.</p>}
@@ -631,7 +920,105 @@ function CommentModal({action,onClose,onSubmit}){
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+/* ---------- auth (live mode) ---------- */
+function Auth({sb, onOpenSettings}){
+  const [mode,setMode] = useState("in"); // in | up
+  const [email,setEmail] = useState("");
+  const [pw,setPw] = useState("");
+  const [name,setName] = useState("");
+  const [err,setErr] = useState("");
+  const [msg,setMsg] = useState("");
+  const [busy,setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e && e.preventDefault();
+    setErr(""); setMsg(""); setBusy(true);
+    try{
+      if(mode==="in"){
+        const { error } = await sb.auth.signInWithPassword({ email, password:pw });
+        if(error) throw error;
+      } else {
+        const { data, error } = await sb.auth.signUp({ email, password:pw, options:{ data:{ name: name || email } } });
+        if(error) throw error;
+        if(!data.session) setMsg("Account created. Check your email to confirm, then sign in.");
+      }
+    } catch(e){ setErr(e.message || String(e)); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="auth-wrap">
+      <form className="auth-card" onSubmit={submit}>
+        <div className="brandrow"><span className="mark">Vibe Proposals</span><span className="tag">idea → go-live</span></div>
+        <h1>{mode==="in"?"Sign in":"Create account"}</h1>
+        <p className="sub">{mode==="in"?"Use your work email to access the proposal board.":"New here? Set up your account in a few seconds."}</p>
+        {err && <div className="auth-err">{err}</div>}
+        {msg && <div className="auth-msg">{msg}</div>}
+        {mode==="up" && (
+          <div className="auth-field">
+            <label className="f">Name</label>
+            <input className="in" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>
+          </div>
+        )}
+        <div className="auth-field">
+          <label className="f">Email</label>
+          <input className="in" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@company.com"/>
+        </div>
+        <div className="auth-field">
+          <label className="f">Password</label>
+          <input className="in" type="password" autoComplete={mode==="in"?"current-password":"new-password"} value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••"/>
+        </div>
+        <button className="btn btn-primary" style={{width:"100%",marginTop:4}} type="submit" disabled={busy||!email||!pw}>
+          {busy ? "Working…" : (mode==="in"?"Sign in":"Create account")}
+        </button>
+        <div className="auth-toggle">
+          {mode==="in"
+            ? <span>No account? <button type="button" onClick={()=>{setMode("up");setErr("");setMsg("");}}>Create one</button></span>
+            : <span>Already have one? <button type="button" onClick={()=>{setMode("in");setErr("");setMsg("");}}>Sign in</button></span>}
+        </div>
+        <div className="auth-toggle">
+          <button type="button" onClick={onOpenSettings}>Use a different database / demo mode</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* ---------- settings: connect a database without editing code ---------- */
+function SettingsModal({current, onClose}){
+  const [url,setUrl] = useState(current?.url || "");
+  const [key,setKey] = useState(current?.key || "");
+  const save = () => {
+    if(url.trim() && key.trim()){ store.set("vp_sb_url", url.trim()); store.set("vp_sb_key", key.trim()); }
+    window.location.reload();
+  };
+  const useDemo = () => { store.del("vp_sb_url"); store.del("vp_sb_key"); window.location.reload(); };
+  return (
+    <div className="modal-bg" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="modal">
+        <h3>Connect a database</h3>
+        <p>Paste your Supabase <b>Project URL</b> and <b>anon key</b> (Project Settings → API). They’re stored in
+          this browser only. The anon key is safe to use here — Row Level Security protects your data.</p>
+        <div style={{marginBottom:12}}>
+          <label className="f">Project URL</label>
+          <input className="in" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxx.supabase.co"/>
+        </div>
+        <div style={{marginBottom:6}}>
+          <label className="f">Anon key</label>
+          <input className="in" value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJhbGci…"/>
+        </div>
+        <div className="actions" style={{marginTop:16}}>
+          <button className="btn btn-primary" disabled={!url.trim()||!key.trim()} onClick={save}>Save &amp; connect</button>
+          <button className="btn btn-ghost" onClick={useDemo}>Use demo mode</button>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+        <p className="hint">First run the included <code>supabase-schema.sql</code> in the Supabase SQL Editor to create the tables.</p>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
 </script>
 </body>
 </html>

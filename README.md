@@ -6,12 +6,23 @@ through approval and IT review, track build time, and ship to go-live.
 The flow: **Proposal → Approval → IT Technical Review → Build & Test →
 Final Approval → IT Deploy → Go Live**, with two Management approval gates.
 
+The app runs in two modes:
+
+- **Demo mode** (default) — data lives in your browser via localStorage, with a
+  role switcher so one person can click through every department. Great for a
+  quick look or a GitHub Pages demo.
+- **Live mode** — connect a Supabase project and it becomes a real shared tool:
+  email/password sign-in, per-department permissions, and **real-time updates**
+  so everyone sees status changes, comments, and timers as they happen.
+
+Switch between them from **⚙ Settings** in the top bar — no code edits needed.
+
 ## Files
 
 - `index.html` — the whole app in one file (React via CDN, no build step).
-  Currently saves data to the browser via localStorage.
+  Talks to Supabase when configured, falls back to localStorage otherwise.
 - `supabase-schema.sql` — paste into Supabase's SQL Editor to create the
-  database (tables + Row Level Security matching the workflow).
+  database (tables + Row Level Security + realtime, matching the workflow).
 
 ## Host on GitHub Pages
 
@@ -22,47 +33,44 @@ Final Approval → IT Deploy → Go Live**, with two Management approval gates.
 This static version works per-browser only — fine as a demo. Connect Supabase
 (below) to make it a real shared tool.
 
-## Connect Supabase (when you're ready)
+## Connect Supabase (go live)
 
-1. Create a Supabase project; run `supabase-schema.sql` in the SQL Editor.
+The Supabase client is already wired into `index.html` — you just give it your
+project's credentials:
+
+1. Create a Supabase project; run `supabase-schema.sql` in the SQL Editor. This
+   creates the tables, Row Level Security, and the realtime publication.
 2. In **Project Settings → API**, copy your **Project URL** and **anon key**.
-3. In `index.html`, add the Supabase client in the `<head>`:
+3. Open the app, click **⚙ Settings**, paste both, and **Save & connect**.
 
-   ```html
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.45.4/supabase.min.js"></script>
-   ```
+That's it. The credentials are stored in your browser only; the anon key is safe
+to use client-side — Row Level Security is what actually protects your data.
 
-   then near the top of the script:
+> Prefer to hardcode it (e.g. for a shared deploy)? Set `window.SUPABASE_URL`
+> and `window.SUPABASE_ANON_KEY` in a `<script>` before the app loads, or use the
+> Settings dialog once per browser.
 
-   ```js
-   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-   ```
+### How it works in live mode
 
-   The anon key is safe to ship in the browser — Row Level Security is what
-   actually protects your data.
+| Concern              | Live behaviour                                                 |
+|----------------------|---------------------------------------------------------------|
+| Initial load         | `proposals` / `comments` / `status_history` / `time_sessions` |
+| Create proposal      | `insert` into `proposals` + a `draft` history row             |
+| Status change        | `update({status})` + insert history (+ comment if a note)     |
+| Comment              | `insert` into `comments`                                       |
+| Timer start/stop     | open / close a `time_sessions` row                            |
+| Identity & role      | `supabase.auth` + the user's `profiles.department`            |
+| Live updates         | Postgres realtime — the board refreshes on any change          |
 
-### Where to swap the code
-
-The prototype keeps all state in React and persists via the small `store`
-helper. To go live-shared, replace the local reads/writes with Supabase calls:
-
-| Prototype (now)                     | Supabase (later)                                  |
-|-------------------------------------|---------------------------------------------------|
-| `seed()` initial data               | `supabase.from('proposals').select()`             |
-| `createProposal()`                  | `supabase.from('proposals').insert(...)`          |
-| `applyAction()` status change       | `update({status}).eq('id',...)` + insert history  |
-| `addComment()`                      | `supabase.from('comments').insert(...)`           |
-| timer start/stop                    | insert / update `time_sessions` rows              |
-| role switcher (demo)                | `supabase.auth` + the user's `profiles.department` |
-
-The UI, the 6-stage pipeline, the gate logic, and the timer all stay the same —
-you're only changing where the data comes from.
+The UI, the 6-stage pipeline, the gate logic, and the timer are identical to
+demo mode — only the data source changes.
 
 ## Notes
 
-- The role switcher in the top bar is a **demo aid** so one person can click
-  through every department. With Supabase Auth, a user's department comes from
-  their `profiles` row instead, and they only see the actions their department
-  owns.
+- In **demo mode** the role switcher in the top bar lets one person click
+  through every department. In **live mode** a user's department comes from their
+  `profiles` row, and they only see the actions their department owns.
 - Set each user's department in the `profiles` table after they sign up
   (default is `operation`).
+- The proposal list has search and quick filters (All / Active / Awaiting you /
+  Closed) plus a stats strip, so it stays usable as the board grows.

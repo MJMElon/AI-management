@@ -136,6 +136,23 @@ create policy "insert sessions" on time_sessions for insert with check (user_id 
 create policy "update sessions" on time_sessions for update using (user_id = auth.uid());
 
 -- ============================================================
+--  REALTIME
+--  Let the browser receive live updates so every department sees
+--  status changes, comments, and timers as they happen.
+-- ============================================================
+do $$
+begin
+  alter publication supabase_realtime add table proposals;
+  alter publication supabase_realtime add table comments;
+  alter publication supabase_realtime add table status_history;
+  alter publication supabase_realtime add table time_sessions;
+exception
+  when duplicate_object then null;  -- already in the publication
+end $$;
+
+-- ============================================================
 --  Done. Next: create users in Authentication, then set their
 --  department in the profiles table (default is 'operation').
+--  In the app, click ⚙ Settings and paste your Project URL +
+--  anon key — no code edits needed.
 -- ============================================================
