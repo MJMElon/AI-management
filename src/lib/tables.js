@@ -1,6 +1,5 @@
-// Table names live in one place so this module can be namespaced apart from
-// future modules sharing the same Supabase database. Change the prefix here
-// and the whole app follows.
+// Table + storage names in one place so this module can be namespaced apart
+// from future modules sharing the same Supabase database.
 const PREFIX = 'ai_management_'
 
 export const T = {
@@ -9,4 +8,8 @@ export const T = {
   comments: PREFIX + 'comments',
   history: PREFIX + 'status_history',
   sessions: PREFIX + 'time_sessions',
+  attachments: PREFIX + 'attachments',
 }
+
+// Storage bucket for proposal attachments (bucket ids use hyphens, not underscores).
+export const BUCKET = 'ai-management-attachments'

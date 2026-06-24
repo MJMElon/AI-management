@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { store } from './store.js'
 import { S, seed, uid, now, iso } from './model.js'
-import { T } from './tables.js'
+import { T, BUCKET } from './tables.js'
 
 // One Supabase client per (url, key) pair.
 let _client = null
@@ -19,9 +19,9 @@ export function getClient(cfg) {
 /* ============================================================
    Both APIs expose the same async surface so the UI never
    branches on storage:
-     load(), create(data, me), action(p, a, note, me, role),
-     comment(p, body, me, role), toggleTimer(p, me)
-   Each resolves to the fresh proposals array.
+     load(), create(data, me, files), action(p, a, note, me, role),
+     comment(p, body, me, role), toggleTimer(p, me), fileUrl(att)
+   Each mutation resolves to the fresh proposals array.
    ============================================================ */
 
 /* ---- demo: localStorage-backed, seeded ---- */
@@ -34,10 +34,12 @@ export function makeDemoApi() {
   return {
     mode: 'demo',
     async load() { return read() },
-    async create(data, me) {
+    async create(data, me, files = []) {
       const p = {
         id: uid(), ...data, status: 'draft', createdBy: me, createdAt: now(),
         comments: [], history: [{ to: 'draft', by: me, at: now(), note: '' }], sessions: [], running: null,
+        // demo can't really store files — keep name/size so the UI is honest
+        attachments: Array.from(files).map((f) => ({ id: uid(), name: f.name, size: f.size, path: null })),
       }
       return write([p, ...read()])
     },
@@ -65,11 +67,12 @@ export function makeDemoApi() {
         return d
       }))
     },
+    async fileUrl() { return null }, // demo has no real files to download
   }
 }
 
 /* ---- live: Supabase ---- */
-function mapProposal(row, names, dept, cBy, hBy, sBy) {
+function mapProposal(row, names, dept, cBy, hBy, sBy, aBy) {
   const sessions = sBy[row.id] || []
   const open = sessions.find((s) => !s.ended_at)
   return {
@@ -88,29 +91,46 @@ function mapProposal(row, names, dept, cBy, hBy, sBy) {
       id: s.id, start: new Date(s.started_at).getTime(), end: new Date(s.ended_at).getTime(),
     })),
     running: open ? new Date(open.started_at).getTime() : null,
+    attachments: (aBy[row.id] || []).map((a) => ({ id: a.id, name: a.name, size: a.size, path: a.path })),
   }
 }
 
 export function makeLiveApi(sb, user) {
   async function load() {
-    const [pr, pp, cm, hi, ss] = await Promise.all([
+    const [pr, pp, cm, hi, ss, at] = await Promise.all([
       sb.from(T.profiles).select('id,name,department'),
       sb.from(T.proposals).select('*').order('created_at', { ascending: false }),
       sb.from(T.comments).select('*').order('created_at', { ascending: true }),
       sb.from(T.history).select('*').order('created_at', { ascending: true }),
       sb.from(T.sessions).select('*').order('started_at', { ascending: true }),
+      sb.from(T.attachments).select('*').order('created_at', { ascending: true }),
     ])
-    const firstErr = [pr, pp, cm, hi, ss].map((r) => r.error).find(Boolean)
+    const firstErr = [pr, pp, cm, hi, ss, at].map((r) => r.error).find(Boolean)
     if (firstErr) throw firstErr
     const names = {}, dept = {}
     ;(pr.data || []).forEach((p) => { names[p.id] = p.name; dept[p.id] = p.department })
     const group = (rows, k) => { const m = {}; (rows || []).forEach((r) => { (m[r[k]] = m[r[k]] || []).push(r) }); return m }
     return (pp.data || []).map((row) =>
-      mapProposal(row, names, dept, group(cm.data, 'proposal_id'), group(hi.data, 'proposal_id'), group(ss.data, 'proposal_id')))
+      mapProposal(row, names, dept,
+        group(cm.data, 'proposal_id'), group(hi.data, 'proposal_id'),
+        group(ss.data, 'proposal_id'), group(at.data, 'proposal_id')))
   }
+
+  async function uploadFiles(proposalId, files) {
+    for (const file of Array.from(files || [])) {
+      const path = `${proposalId}/${uid()}-${file.name}`
+      const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false })
+      if (upErr) throw upErr
+      const { error: rowErr } = await sb.from(T.attachments).insert({
+        proposal_id: proposalId, name: file.name, path, size: file.size, uploaded_by: user.id,
+      })
+      if (rowErr) throw rowErr
+    }
+  }
+
   return {
     mode: 'live', load,
-    async create(data) {
+    async create(data, _me, files = []) {
       const { data: rows, error } = await sb.from(T.proposals).insert({
         title: data.title, problem: data.problem, benefit: data.benefit,
         est_hours: data.est, priority: data.prio, category: data.cat, tools: data.tools || null,
@@ -118,6 +138,7 @@ export function makeLiveApi(sb, user) {
       }).select('id').single()
       if (error) throw error
       await sb.from(T.history).insert({ proposal_id: rows.id, to_status: 'draft', actor_id: user.id })
+      if (files && files.length) await uploadFiles(rows.id, files)
       return load()
     },
     async action(p, action, note) {
@@ -142,6 +163,11 @@ export function makeLiveApi(sb, user) {
         await sb.from(T.sessions).insert({ proposal_id: p.id, user_id: user.id })
       }
       return load()
+    },
+    async fileUrl(att) {
+      if (!att?.path) return null
+      const { data } = await sb.storage.from(BUCKET).createSignedUrl(att.path, 3600)
+      return data?.signedUrl || null
     },
   }
 }

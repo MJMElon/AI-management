@@ -103,6 +103,19 @@ create table if not exists ai_management_time_sessions (
   ended_at    timestamptz
 );
 
+-- 6. ATTACHMENTS ---------------------------------------------
+-- Metadata for files uploaded with a proposal. The file bytes live in
+-- Supabase Storage (bucket below); `path` points at the object.
+create table if not exists ai_management_attachments (
+  id          uuid primary key default gen_random_uuid(),
+  proposal_id uuid not null references ai_management_proposals(id) on delete cascade,
+  name        text not null,
+  path        text not null,
+  size        bigint,
+  uploaded_by uuid not null references ai_management_profiles(id),
+  created_at  timestamptz not null default now()
+);
+
 -- ============================================================
 --  ROW LEVEL SECURITY
 --  Internal tool: every signed-in user can READ everything.
@@ -113,6 +126,7 @@ alter table ai_management_proposals      enable row level security;
 alter table ai_management_comments       enable row level security;
 alter table ai_management_status_history enable row level security;
 alter table ai_management_time_sessions  enable row level security;
+alter table ai_management_attachments    enable row level security;
 
 -- profiles: read all; edit only your own (admins edit anyone).
 drop policy if exists "read profiles" on ai_management_profiles;
@@ -160,6 +174,27 @@ create policy "insert sessions" on ai_management_time_sessions for insert with c
 drop policy if exists "update sessions" on ai_management_time_sessions;
 create policy "update sessions" on ai_management_time_sessions for update using (user_id = auth.uid());
 
+-- attachments: read all; upload as yourself.
+drop policy if exists "read attachments" on ai_management_attachments;
+create policy "read attachments" on ai_management_attachments for select using (auth.uid() is not null);
+drop policy if exists "write attachments" on ai_management_attachments;
+create policy "write attachments" on ai_management_attachments for insert with check (uploaded_by = auth.uid());
+
+-- ============================================================
+--  STORAGE  (proposal attachments)
+--  Private bucket; signed URLs are minted by the app for downloads.
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('ai-management-attachments', 'ai-management-attachments', false)
+on conflict (id) do nothing;
+
+drop policy if exists "ai_mgmt read attachments" on storage.objects;
+create policy "ai_mgmt read attachments" on storage.objects for select
+  using (bucket_id = 'ai-management-attachments' and auth.uid() is not null);
+drop policy if exists "ai_mgmt upload attachments" on storage.objects;
+create policy "ai_mgmt upload attachments" on storage.objects for insert
+  with check (bucket_id = 'ai-management-attachments' and auth.uid() is not null);
+
 -- ============================================================
 --  REALTIME
 --  Let the browser receive live updates so every department sees
@@ -171,6 +206,7 @@ begin
   alter publication supabase_realtime add table ai_management_comments;
   alter publication supabase_realtime add table ai_management_status_history;
   alter publication supabase_realtime add table ai_management_time_sessions;
+  alter publication supabase_realtime add table ai_management_attachments;
 exception
   when duplicate_object then null;  -- already in the publication
 end $$;

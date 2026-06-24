@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { DEPTS, S, STAGES, ACTIONS, now, fmtDate, fmtHrs, fmtClock } from '../lib/model.js'
+import { DEPTS, S, STAGES, ACTIONS, now, fmtDate, fmtHrs, fmtClock, fmtSize } from '../lib/model.js'
 
-export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, onComment }) {
+export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, onComment, onDownload }) {
   const st = S[p.status]
   const actions = ACTIONS[p.status] || []
 
@@ -109,6 +109,24 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
           <dt>Planned tools</dt><dd>{p.tools || '—'}</dd>
         </dl>
       </div>
+
+      {/* attachments */}
+      {p.attachments && p.attachments.length > 0 && (
+        <div className="section">
+          <h3>Attachments</h3>
+          <div className="filelist">
+            {p.attachments.map((a) => (
+              <div className="filerow" key={a.id}>
+                <span className="filename">📎 {a.name}</span>
+                {a.size != null && <span className="muted mono">{fmtSize(a.size)}</span>}
+                {a.path
+                  ? <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 12.5 }} onClick={() => onDownload(a)}>Download</button>
+                  : <span className="muted" style={{ fontSize: 12 }}>demo</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* comments */}
       <div className="section">

@@ -71,6 +71,12 @@ export const fmtClock = (secs) => {
   const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = Math.floor(secs % 60)
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
+export const fmtSize = (bytes) => {
+  if (!bytes && bytes !== 0) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
 
 // Demo seed — only used when no database is connected.
 export function seed() {
