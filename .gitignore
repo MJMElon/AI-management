@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+
+# Local env files — never commit your Supabase keys
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.DS_Store
+*.log
