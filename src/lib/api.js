@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { store } from './store.js'
 import { S, seed, uid, now, iso } from './model.js'
+import { T } from './tables.js'
 
 // One Supabase client per (url, key) pair.
 let _client = null
@@ -93,11 +94,11 @@ function mapProposal(row, names, dept, cBy, hBy, sBy) {
 export function makeLiveApi(sb, user) {
   async function load() {
     const [pr, pp, cm, hi, ss] = await Promise.all([
-      sb.from('profiles').select('id,name,department'),
-      sb.from('proposals').select('*').order('created_at', { ascending: false }),
-      sb.from('comments').select('*').order('created_at', { ascending: true }),
-      sb.from('status_history').select('*').order('created_at', { ascending: true }),
-      sb.from('time_sessions').select('*').order('started_at', { ascending: true }),
+      sb.from(T.profiles).select('id,name,department'),
+      sb.from(T.proposals).select('*').order('created_at', { ascending: false }),
+      sb.from(T.comments).select('*').order('created_at', { ascending: true }),
+      sb.from(T.history).select('*').order('created_at', { ascending: true }),
+      sb.from(T.sessions).select('*').order('started_at', { ascending: true }),
     ])
     const firstErr = [pr, pp, cm, hi, ss].map((r) => r.error).find(Boolean)
     if (firstErr) throw firstErr
@@ -110,35 +111,35 @@ export function makeLiveApi(sb, user) {
   return {
     mode: 'live', load,
     async create(data) {
-      const { data: rows, error } = await sb.from('proposals').insert({
+      const { data: rows, error } = await sb.from(T.proposals).insert({
         title: data.title, problem: data.problem, benefit: data.benefit,
         est_hours: data.est, priority: data.prio, category: data.cat, tools: data.tools || null,
         created_by: user.id, status: 'draft',
       }).select('id').single()
       if (error) throw error
-      await sb.from('status_history').insert({ proposal_id: rows.id, to_status: 'draft', actor_id: user.id })
+      await sb.from(T.history).insert({ proposal_id: rows.id, to_status: 'draft', actor_id: user.id })
       return load()
     },
     async action(p, action, note) {
       if (p.running && !(S[action.to]?.timer)) {
-        await sb.from('time_sessions').update({ ended_at: iso() }).eq('proposal_id', p.id).is('ended_at', null)
+        await sb.from(T.sessions).update({ ended_at: iso() }).eq('proposal_id', p.id).is('ended_at', null)
       }
-      const { error } = await sb.from('proposals').update({ status: action.to, updated_at: iso() }).eq('id', p.id)
+      const { error } = await sb.from(T.proposals).update({ status: action.to, updated_at: iso() }).eq('id', p.id)
       if (error) throw error
-      await sb.from('status_history').insert({ proposal_id: p.id, to_status: action.to, actor_id: user.id, note: note || null })
-      if (note) await sb.from('comments').insert({ proposal_id: p.id, author_id: user.id, body: note })
+      await sb.from(T.history).insert({ proposal_id: p.id, to_status: action.to, actor_id: user.id, note: note || null })
+      if (note) await sb.from(T.comments).insert({ proposal_id: p.id, author_id: user.id, body: note })
       return load()
     },
     async comment(p, body) {
-      const { error } = await sb.from('comments').insert({ proposal_id: p.id, author_id: user.id, body })
+      const { error } = await sb.from(T.comments).insert({ proposal_id: p.id, author_id: user.id, body })
       if (error) throw error
       return load()
     },
     async toggleTimer(p) {
       if (p.running) {
-        await sb.from('time_sessions').update({ ended_at: iso() }).eq('proposal_id', p.id).is('ended_at', null)
+        await sb.from(T.sessions).update({ ended_at: iso() }).eq('proposal_id', p.id).is('ended_at', null)
       } else {
-        await sb.from('time_sessions').insert({ proposal_id: p.id, user_id: user.id })
+        await sb.from(T.sessions).insert({ proposal_id: p.id, user_id: user.id })
       }
       return load()
     },

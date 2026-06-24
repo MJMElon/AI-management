@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { store } from './lib/store.js'
 import { getCfg } from './lib/config.js'
 import { getClient, makeDemoApi, makeLiveApi } from './lib/api.js'
-import { DEPTS, ROLE_USER } from './lib/model.js'
+import { ROLE_USER } from './lib/model.js'
+import { T } from './lib/tables.js'
 import App from './components/App.jsx'
 import Auth from './components/Auth.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
@@ -34,7 +35,7 @@ export default function Root() {
   useEffect(() => {
     if (!sb || !session) { setProfile(null); return }
     let alive = true
-    sb.from('profiles').select('id,name,department').eq('id', session.user.id).single()
+    sb.from(T.profiles).select('id,name,department').eq('id', session.user.id).single()
       .then(({ data }) => { if (alive) setProfile(data || { id: session.user.id, name: session.user.email, department: 'operation' }) })
     return () => { alive = false }
   }, [sb, session])

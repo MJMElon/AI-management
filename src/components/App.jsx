@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { store } from '../lib/store.js'
 import { DEPTS, S, ACTIONS } from '../lib/model.js'
+import { T } from '../lib/tables.js'
 import Detail from './Detail.jsx'
 import CreateForm from './CreateForm.jsx'
 import CommentModal from './CommentModal.jsx'
@@ -33,7 +34,7 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut, onOpe
   useEffect(() => {
     if (mode !== 'live' || !sb) return
     const ch = sb.channel('vp-realtime')
-    ;['proposals', 'comments', 'status_history', 'time_sessions'].forEach((t) =>
+    ;[T.proposals, T.comments, T.history, T.sessions].forEach((t) =>
       ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => { reload() }))
     ch.subscribe()
     return () => { sb.removeChannel(ch) }

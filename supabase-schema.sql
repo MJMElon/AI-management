@@ -1,14 +1,16 @@
 -- ============================================================
---  Vibe Proposals — Supabase schema
---  Paste this into your Supabase project's SQL Editor and run.
+--  Vibe Proposals — Supabase schema  (safe to run / re-run)
+--  Tables are prefixed `ai_management_` so this module can share
+--  one Supabase database with other modules added later.
 --  Covers: profiles (with department), proposals, comments,
---          status_history, time_sessions, plus Row Level Security.
+--          status_history, time_sessions, plus Row Level Security
+--          and realtime.
 -- ============================================================
 
 -- 1. PROFILES ------------------------------------------------
 -- One row per user, linked to Supabase Auth. `department` doubles
 -- as the role and decides which stages a user can act on.
-create table if not exists profiles (
+create table if not exists ai_management_profiles (
   id          uuid primary key references auth.users(id) on delete cascade,
   name        text not null,
   department  text not null default 'operation'
@@ -16,42 +18,42 @@ create table if not exists profiles (
   created_at  timestamptz not null default now()
 );
 
--- Heal an older/pre-existing profiles table that may be missing columns
+-- Heal an older/pre-existing table that may be missing columns
 -- (otherwise `create table if not exists` above silently does nothing).
-alter table profiles add column if not exists name       text;
-alter table profiles add column if not exists department text default 'operation';
-alter table profiles add column if not exists created_at timestamptz default now();
+alter table ai_management_profiles add column if not exists name       text;
+alter table ai_management_profiles add column if not exists department text default 'operation';
+alter table ai_management_profiles add column if not exists created_at timestamptz default now();
 do $$
 begin
-  alter table profiles add constraint profiles_department_check
+  alter table ai_management_profiles add constraint ai_management_profiles_department_check
     check (department in ('operation','management','it','admin'));
 exception
   when duplicate_object then null;  -- constraint already present
 end $$;
 
 -- Auto-create a profile when a new auth user signs up.
-create or replace function handle_new_user()
+create or replace function ai_management_handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
-  insert into public.profiles (id, name, department)
+  insert into public.ai_management_profiles (id, name, department)
   values (new.id, coalesce(new.raw_user_meta_data->>'name', new.email), 'operation');
   return new;
 end;
 $$;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
+drop trigger if exists ai_management_on_auth_user_created on auth.users;
+create trigger ai_management_on_auth_user_created
   after insert on auth.users
-  for each row execute function handle_new_user();
+  for each row execute function ai_management_handle_new_user();
 
 -- Helper: the calling user's department.
-create or replace function my_department()
+create or replace function ai_management_my_department()
 returns text language sql stable security definer as $$
-  select department from public.profiles where id = auth.uid();
+  select department from public.ai_management_profiles where id = auth.uid();
 $$;
 
 -- 2. PROPOSALS -----------------------------------------------
-create table if not exists proposals (
+create table if not exists ai_management_proposals (
   id          uuid primary key default gen_random_uuid(),
   title       text not null,
   problem     text not null,
@@ -64,28 +66,28 @@ create table if not exists proposals (
               check (status in ('draft','pending_approval','needs_revision','rejected',
                                 'it_review','building','final_review','needs_rework',
                                 'final_rejected','ready_to_deploy','deploying','live')),
-  created_by  uuid not null references profiles(id),
+  created_by  uuid not null references ai_management_profiles(id),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
-create index if not exists proposals_status_idx on proposals(status);
+create index if not exists ai_management_proposals_status_idx on ai_management_proposals(status);
 
 -- 3. COMMENTS ------------------------------------------------
-create table if not exists comments (
+create table if not exists ai_management_comments (
   id          uuid primary key default gen_random_uuid(),
-  proposal_id uuid not null references proposals(id) on delete cascade,
-  author_id   uuid not null references profiles(id),
+  proposal_id uuid not null references ai_management_proposals(id) on delete cascade,
+  author_id   uuid not null references ai_management_profiles(id),
   body        text not null,
   created_at  timestamptz not null default now()
 );
 
 -- 4. STATUS HISTORY ------------------------------------------
-create table if not exists status_history (
+create table if not exists ai_management_status_history (
   id          uuid primary key default gen_random_uuid(),
-  proposal_id uuid not null references proposals(id) on delete cascade,
+  proposal_id uuid not null references ai_management_proposals(id) on delete cascade,
   to_status   text not null,
-  actor_id    uuid not null references profiles(id),
+  actor_id    uuid not null references ai_management_profiles(id),
   note        text,
   created_at  timestamptz not null default now()
 );
@@ -93,10 +95,10 @@ create table if not exists status_history (
 -- 5. TIME SESSIONS -------------------------------------------
 -- started_at / ended_at are server timestamps. Duration is derived;
 -- an open session (ended_at is null) means a timer is running.
-create table if not exists time_sessions (
+create table if not exists ai_management_time_sessions (
   id          uuid primary key default gen_random_uuid(),
-  proposal_id uuid not null references proposals(id) on delete cascade,
-  user_id     uuid not null references profiles(id),
+  proposal_id uuid not null references ai_management_proposals(id) on delete cascade,
+  user_id     uuid not null references ai_management_profiles(id),
   started_at  timestamptz not null default now(),
   ended_at    timestamptz
 );
@@ -106,59 +108,57 @@ create table if not exists time_sessions (
 --  Internal tool: every signed-in user can READ everything.
 --  WRITES are gated by department so the browser can't skip steps.
 -- ============================================================
-alter table profiles       enable row level security;
-alter table proposals      enable row level security;
-alter table comments       enable row level security;
-alter table status_history enable row level security;
-alter table time_sessions  enable row level security;
+alter table ai_management_profiles       enable row level security;
+alter table ai_management_proposals      enable row level security;
+alter table ai_management_comments       enable row level security;
+alter table ai_management_status_history enable row level security;
+alter table ai_management_time_sessions  enable row level security;
 
 -- profiles: read all; edit only your own (admins edit anyone).
-drop policy if exists "read profiles" on profiles;
-create policy "read profiles"   on profiles for select using (auth.uid() is not null);
-drop policy if exists "update own profile" on profiles;
-create policy "update own profile" on profiles for update
-  using (id = auth.uid() or my_department() = 'admin');
+drop policy if exists "read profiles" on ai_management_profiles;
+create policy "read profiles" on ai_management_profiles for select using (auth.uid() is not null);
+drop policy if exists "update own profile" on ai_management_profiles;
+create policy "update own profile" on ai_management_profiles for update
+  using (id = auth.uid() or ai_management_my_department() = 'admin');
 
 -- proposals: everyone signed-in can read.
-drop policy if exists "read proposals" on proposals;
-create policy "read proposals" on proposals for select using (auth.uid() is not null);
+drop policy if exists "read proposals" on ai_management_proposals;
+create policy "read proposals" on ai_management_proposals for select using (auth.uid() is not null);
 
 -- only Operation (or admin) can create a proposal.
-drop policy if exists "create proposals" on proposals;
-create policy "create proposals" on proposals for insert
-  with check (my_department() in ('operation','admin') and created_by = auth.uid());
+drop policy if exists "create proposals" on ai_management_proposals;
+create policy "create proposals" on ai_management_proposals for insert
+  with check (ai_management_my_department() in ('operation','admin') and created_by = auth.uid());
 
 -- updates: the department that owns the CURRENT status may change it.
--- (For strict per-transition rules, move this into a trigger; this
---  baseline already stops, e.g., Operation approving its own proposal.)
-drop policy if exists "update proposals by owner" on proposals;
-create policy "update proposals by owner" on proposals for update
+drop policy if exists "update proposals by owner" on ai_management_proposals;
+create policy "update proposals by owner" on ai_management_proposals for update
   using (
-    my_department() = 'admin'
-    or (status in ('draft','needs_revision','building','needs_rework') and my_department() = 'operation')
-    or (status in ('pending_approval','final_review')               and my_department() = 'management')
-    or (status in ('it_review','ready_to_deploy','deploying','live') and my_department() = 'it')
+    ai_management_my_department() = 'admin'
+    or (status in ('draft','needs_revision','building','needs_rework') and ai_management_my_department() = 'operation')
+    or (status in ('pending_approval','final_review')               and ai_management_my_department() = 'management')
+    or (status in ('it_review','ready_to_deploy','deploying','live') and ai_management_my_department() = 'it')
   );
 
 -- comments: read all; anyone signed-in can post as themselves.
-drop policy if exists "read comments" on comments;
-create policy "read comments"  on comments for select using (auth.uid() is not null);
-drop policy if exists "write comments" on comments;
-create policy "write comments" on comments for insert with check (author_id = auth.uid());
+drop policy if exists "read comments" on ai_management_comments;
+create policy "read comments" on ai_management_comments for select using (auth.uid() is not null);
+drop policy if exists "write comments" on ai_management_comments;
+create policy "write comments" on ai_management_comments for insert with check (author_id = auth.uid());
 
 -- status_history: read all; insert as yourself.
-drop policy if exists "read history" on status_history;
-create policy "read history"  on status_history for select using (auth.uid() is not null);
-drop policy if exists "write history" on status_history;
-create policy "write history" on status_history for insert with check (actor_id = auth.uid());
+drop policy if exists "read history" on ai_management_status_history;
+create policy "read history" on ai_management_status_history for select using (auth.uid() is not null);
+drop policy if exists "write history" on ai_management_status_history;
+create policy "write history" on ai_management_status_history for insert with check (actor_id = auth.uid());
 
 -- time_sessions: read all; you manage your own sessions.
-drop policy if exists "read sessions" on time_sessions;
-create policy "read sessions"   on time_sessions for select using (auth.uid() is not null);
-drop policy if exists "insert sessions" on time_sessions;
-create policy "insert sessions" on time_sessions for insert with check (user_id = auth.uid());
-drop policy if exists "update sessions" on time_sessions;
-create policy "update sessions" on time_sessions for update using (user_id = auth.uid());
+drop policy if exists "read sessions" on ai_management_time_sessions;
+create policy "read sessions" on ai_management_time_sessions for select using (auth.uid() is not null);
+drop policy if exists "insert sessions" on ai_management_time_sessions;
+create policy "insert sessions" on ai_management_time_sessions for insert with check (user_id = auth.uid());
+drop policy if exists "update sessions" on ai_management_time_sessions;
+create policy "update sessions" on ai_management_time_sessions for update using (user_id = auth.uid());
 
 -- ============================================================
 --  REALTIME
@@ -167,17 +167,17 @@ create policy "update sessions" on time_sessions for update using (user_id = aut
 -- ============================================================
 do $$
 begin
-  alter publication supabase_realtime add table proposals;
-  alter publication supabase_realtime add table comments;
-  alter publication supabase_realtime add table status_history;
-  alter publication supabase_realtime add table time_sessions;
+  alter publication supabase_realtime add table ai_management_proposals;
+  alter publication supabase_realtime add table ai_management_comments;
+  alter publication supabase_realtime add table ai_management_status_history;
+  alter publication supabase_realtime add table ai_management_time_sessions;
 exception
   when duplicate_object then null;  -- already in the publication
 end $$;
 
 -- ============================================================
 --  Done. Next: create users in Authentication, then set their
---  department in the profiles table (default is 'operation').
---  In the app, click ⚙ Settings and paste your Project URL +
---  anon key — no code edits needed.
+--  department in the ai_management_profiles table (default is
+--  'operation'). In the app, click ⚙ Settings and paste your
+--  Project URL + anon key — no code edits needed.
 -- ============================================================
