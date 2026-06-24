@@ -100,20 +100,25 @@ alter table status_history enable row level security;
 alter table time_sessions  enable row level security;
 
 -- profiles: read all; edit only your own (admins edit anyone).
+drop policy if exists "read profiles" on profiles;
 create policy "read profiles"   on profiles for select using (auth.uid() is not null);
+drop policy if exists "update own profile" on profiles;
 create policy "update own profile" on profiles for update
   using (id = auth.uid() or my_department() = 'admin');
 
 -- proposals: everyone signed-in can read.
+drop policy if exists "read proposals" on proposals;
 create policy "read proposals" on proposals for select using (auth.uid() is not null);
 
 -- only Operation (or admin) can create a proposal.
+drop policy if exists "create proposals" on proposals;
 create policy "create proposals" on proposals for insert
   with check (my_department() in ('operation','admin') and created_by = auth.uid());
 
 -- updates: the department that owns the CURRENT status may change it.
 -- (For strict per-transition rules, move this into a trigger; this
 --  baseline already stops, e.g., Operation approving its own proposal.)
+drop policy if exists "update proposals by owner" on proposals;
 create policy "update proposals by owner" on proposals for update
   using (
     my_department() = 'admin'
@@ -123,16 +128,23 @@ create policy "update proposals by owner" on proposals for update
   );
 
 -- comments: read all; anyone signed-in can post as themselves.
+drop policy if exists "read comments" on comments;
 create policy "read comments"  on comments for select using (auth.uid() is not null);
+drop policy if exists "write comments" on comments;
 create policy "write comments" on comments for insert with check (author_id = auth.uid());
 
 -- status_history: read all; insert as yourself.
+drop policy if exists "read history" on status_history;
 create policy "read history"  on status_history for select using (auth.uid() is not null);
+drop policy if exists "write history" on status_history;
 create policy "write history" on status_history for insert with check (actor_id = auth.uid());
 
 -- time_sessions: read all; you manage your own sessions.
+drop policy if exists "read sessions" on time_sessions;
 create policy "read sessions"   on time_sessions for select using (auth.uid() is not null);
+drop policy if exists "insert sessions" on time_sessions;
 create policy "insert sessions" on time_sessions for insert with check (user_id = auth.uid());
+drop policy if exists "update sessions" on time_sessions;
 create policy "update sessions" on time_sessions for update using (user_id = auth.uid());
 
 -- ============================================================
