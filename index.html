@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vibe Proposals — idea to go-live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<style>
+  :root{
+    --forest:#0d3b2e; --forest-2:#114a39; --emerald:#1f9d6b; --emerald-soft:#e3f3ec;
+    --amber:#c98a16; --amber-soft:#fbeed2; --slate:#3f5566; --slate-soft:#e6edf1;
+    --indigo:#4f46a8; --indigo-soft:#e9e7f7; --sky:#2d7fb8; --sky-soft:#e1eef8;
+    --rose:#b3344b; --rose-soft:#f7e1e5;
+    --ink:#16201c; --ink-2:#4a5852; --line:#dfe5e1; --paper:#f5f7f4; --card:#ffffff;
+    --radius:14px; --shadow:0 1px 2px rgba(13,59,46,.06),0 8px 24px rgba(13,59,46,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  h1,h2,h3,.display{font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.01em}
+  button{font-family:inherit;cursor:pointer}
+  .mono{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+  a{color:inherit}
+
+  /* top bar */
+  .topbar{position:sticky;top:0;z-index:20;background:var(--forest);color:#eaf3ee;
+    display:flex;align-items:center;gap:18px;padding:14px 22px;
+    border-bottom:1px solid rgba(255,255,255,.08)}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand .mark{font-family:"Space Grotesk";font-weight:700;font-size:19px;letter-spacing:-.02em}
+  .brand .tag{font-size:12px;color:#9bc3b1}
+  .spacer{flex:1}
+  .who{font-size:12.5px;color:#bcd8cb;text-align:right;line-height:1.3}
+  .who b{color:#fff;font-weight:600}
+  .roleswitch{display:flex;background:rgba(255,255,255,.08);border-radius:10px;padding:3px}
+  .roleswitch button{border:0;background:transparent;color:#bcd8cb;font-size:12.5px;font-weight:600;
+    padding:6px 11px;border-radius:7px;transition:.15s}
+  .roleswitch button[data-on="1"]{background:#eaf3ee;color:var(--forest)}
+
+  /* layout */
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 22px 80px}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;
+    padding:15px 17px;border-bottom:1px solid var(--line)}
+  .panel-h h2{margin:0;font-size:14px;font-weight:600}
+  .muted{color:var(--ink-2)}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+
+  /* proposal list */
+  .plist{display:flex;flex-direction:column}
+  .pcard{display:block;width:100%;text-align:left;border:0;background:transparent;
+    padding:14px 17px;border-bottom:1px solid var(--line);transition:.12s}
+  .pcard:last-child{border-bottom:0}
+  .pcard:hover{background:#f8faf8}
+  .pcard[data-sel="1"]{background:var(--emerald-soft)}
+  .pcard .t{font-weight:600;font-size:14.5px;margin:0 0 5px;font-family:"Space Grotesk"}
+  .pcard .meta{font-size:12px;color:var(--ink-2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
+    padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .dot{width:6px;height:6px;border-radius:50%}
+  .b-slate{background:var(--slate-soft);color:var(--slate)} .b-slate .dot{background:var(--slate)}
+  .b-amber{background:var(--amber-soft);color:var(--amber)} .b-amber .dot{background:var(--amber)}
+  .b-indigo{background:var(--indigo-soft);color:var(--indigo)} .b-indigo .dot{background:var(--indigo)}
+  .b-sky{background:var(--sky-soft);color:var(--sky)} .b-sky .dot{background:var(--sky)}
+  .b-emerald{background:var(--emerald-soft);color:var(--emerald)} .b-emerald .dot{background:var(--emerald)}
+  .b-rose{background:var(--rose-soft);color:var(--rose)} .b-rose .dot{background:var(--rose)}
+
+  /* detail */
+  .detail{padding:0}
+  .detail-top{padding:20px 22px 6px}
+  .detail-top h1{margin:0 0 6px;font-size:23px}
+  .detail-sub{font-size:13px;color:var(--ink-2);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+  /* pipeline — the signature element */
+  .pipe{display:flex;gap:0;padding:18px 22px 4px;overflow-x:auto}
+  .step{flex:1 0 0;min-width:104px;position:relative;padding:0 6px}
+  .step .num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+    font-family:"Space Grotesk";font-weight:700;font-size:14px;background:#eef2ef;color:#9aa8a1;
+    border:2px solid transparent;transition:.2s}
+  .step .lbl{font-size:12px;font-weight:600;margin-top:8px;color:#9aa8a1;font-family:"Space Grotesk"}
+  .step .own{font-size:10.5px;margin-top:3px;color:#b3beb8}
+  .step:not(:last-child)::after{content:"";position:absolute;top:17px;left:calc(50% + 17px);right:calc(-50% + 17px);
+    height:2px;background:#e7ece8}
+  .step[data-state="done"] .num{background:var(--emerald);color:#fff}
+  .step[data-state="done"]::after{background:var(--emerald)}
+  .step[data-state="done"] .lbl,.step[data-state="active"] .lbl{color:var(--ink)}
+  .step[data-state="done"] .own,.step[data-state="active"] .own{color:var(--ink-2)}
+  .step[data-state="active"] .num{background:#fff;color:var(--forest);border-color:var(--emerald);
+    box-shadow:0 0 0 4px var(--emerald-soft)}
+  .step[data-flag="1"] .num{background:#fff;color:var(--rose);border-color:var(--rose);box-shadow:0 0 0 4px var(--rose-soft)}
+
+  .section{padding:18px 22px;border-top:1px solid var(--line)}
+  .section h3{margin:0 0 12px;font-size:13px}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13.5px}
+  .kv dt{color:var(--ink-2)} .kv dd{margin:0}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13.5px;font-weight:600;
+    padding:9px 15px;border-radius:10px;transition:.14s}
+  .btn:hover{border-color:#c6d0c9;background:#fafcfa}
+  .btn-primary{background:var(--forest);border-color:var(--forest);color:#eaf3ee}
+  .btn-primary:hover{background:var(--forest-2)}
+  .btn-amber{background:var(--amber);border-color:var(--amber);color:#fff}
+  .btn-amber:hover{filter:brightness(1.05)}
+  .btn-rose{background:#fff;border-color:var(--rose);color:var(--rose)}
+  .btn-rose:hover{background:var(--rose-soft)}
+  .btn-ghost{background:transparent;border-color:var(--line)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:12.5px;color:var(--ink-2);margin-top:10px}
+
+  /* timer */
+  .timer{display:flex;align-items:center;gap:16px;background:var(--forest);color:#eaf3ee;
+    border-radius:12px;padding:14px 18px}
+  .timer .clock{font-size:30px;font-weight:600}
+  .timer .sub{font-size:11.5px;color:#9bc3b1;letter-spacing:.04em}
+  .timer.idle{background:#eef3f0;color:var(--ink)} .timer.idle .sub{color:var(--ink-2)}
+  .logrow{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .logrow:last-child{border-bottom:0}
+
+  /* comments + history */
+  .thread{display:flex;flex-direction:column;gap:12px}
+  .cmt{font-size:13px}
+  .cmt .h{font-size:11.5px;color:var(--ink-2);margin-bottom:2px}
+  .cmt .h b{color:var(--ink)}
+  .cmt .body{background:#f6f8f6;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+  .hist li{display:grid;grid-template-columns:18px 1fr;gap:10px;padding:7px 0;font-size:12.5px}
+  .hist .tick{width:9px;height:9px;border-radius:50%;background:var(--emerald);margin-top:5px}
+  .hist .when{color:var(--ink-2)}
+
+  /* form */
+  .form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .form .full{grid-column:1/-1}
+  label.f{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;color:var(--ink-2)}
+  input.in,textarea.in,select.in{width:100%;border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;font:inherit;font-size:13.5px;background:#fff;color:var(--ink)}
+  textarea.in{min-height:80px;resize:vertical}
+  .in:focus{outline:2px solid var(--emerald);outline-offset:1px;border-color:transparent}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(13,40,30,.4);display:grid;place-items:center;z-index:40;padding:20px}
+  .modal{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .modal h3{margin:0 0 6px}
+  .modal p{margin:0 0 14px;font-size:13.5px;color:var(--ink-2)}
+
+  .empty{padding:60px 24px;text-align:center;color:var(--ink-2)}
+  .empty .big{font-family:"Space Grotesk";font-size:17px;color:var(--ink);margin-bottom:6px}
+
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .pill{font-size:11.5px;font-weight:600;color:var(--ink-2);background:#eef2ef;border-radius:999px;padding:3px 9px}
+  .banner{font-size:12.5px;background:var(--amber-soft);color:#7a560a;border:1px solid #eccf94;
+    border-radius:10px;padding:9px 12px;margin:0 22px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ---------- safe storage (works on GitHub Pages, falls back in sandboxes) ---------- */
+const store = (() => {
+  let mem = {};
+  let ok = true;
+  try { const k="__t"; window.localStorage.setItem(k,"1"); window.localStorage.removeItem(k); }
+  catch(e){ ok = false; }
+  return {
+    get(k){ try { return ok ? window.localStorage.getItem(k) : mem[k] ?? null; } catch(e){ return mem[k] ?? null; } },
+    set(k,v){ try { ok ? window.localStorage.setItem(k,v) : (mem[k]=v); } catch(e){ mem[k]=v; } },
+  };
+})();
+
+/* ---------- domain model ---------- */
+const DEPTS = {
+  operation:{label:"Operation Dept.", color:"emerald"},
+  management:{label:"Management Team", color:"amber"},
+  it:{label:"IT Dept.", color:"sky"},
+  admin:{label:"Administrator", color:"rose"},
+};
+
+// status -> {label, owner dept, badge color, stage index}
+const S = {
+  draft:           {label:"Draft",              owner:"operation",  color:"slate",   stage:1},
+  pending_approval:{label:"Pending Approval",   owner:"management", color:"amber",   stage:2},
+  needs_revision:  {label:"Needs Revision",     owner:"operation",  color:"slate",   stage:1},
+  rejected:        {label:"Rejected",           owner:"management", color:"rose",    stage:2, terminal:true},
+  it_review:       {label:"IT Technical Review",owner:"it",         color:"sky",     stage:3},
+  building:        {label:"Build & Test",       owner:"operation",  color:"indigo",  stage:4, timer:true},
+  final_review:    {label:"Final Review",       owner:"management", color:"amber",   stage:4},
+  needs_rework:    {label:"Needs Rework",       owner:"operation",  color:"slate",   stage:4},
+  final_rejected:  {label:"Final Rejected",     owner:"management", color:"rose",    stage:4, terminal:true},
+  ready_to_deploy: {label:"Ready to Deploy",    owner:"it",         color:"sky",     stage:5},
+  deploying:       {label:"Deploying",          owner:"it",         color:"sky",     stage:5, timer:true},
+  live:            {label:"Live",               owner:"it",         color:"emerald", stage:6, terminal:true},
+};
+
+const STAGES = [
+  {n:1,label:"Proposal",owner:"operation"},
+  {n:2,label:"Approval",owner:"management"},
+  {n:3,label:"IT Review",owner:"it"},
+  {n:4,label:"Build & Test",owner:"operation"},
+  {n:5,label:"Deploy",owner:"it"},
+  {n:6,label:"Go Live",owner:"it"},
+];
+
+// actions available, keyed by status. needsComment => opens modal for a required note.
+const ACTIONS = {
+  draft:            [{to:"pending_approval", label:"Submit for approval", kind:"primary"}],
+  needs_revision:   [{to:"pending_approval", label:"Resubmit", kind:"primary"}],
+  pending_approval: [
+    {to:"it_review",      label:"Approve", kind:"amber"},
+    {to:"needs_revision", label:"Request changes", kind:"ghost", needsComment:true},
+    {to:"rejected",       label:"Reject", kind:"rose", needsComment:true},
+  ],
+  it_review:        [
+    {to:"building",       label:"Clear for build", kind:"primary"},
+    {to:"needs_revision", label:"Send back with concerns", kind:"ghost", needsComment:true},
+  ],
+  building:         [{to:"final_review", label:"Submit for final approval", kind:"primary"}],
+  needs_rework:     [{to:"building", label:"Resume build", kind:"primary"}],
+  final_review:     [
+    {to:"ready_to_deploy", label:"Approve for deploy", kind:"amber"},
+    {to:"needs_rework",    label:"Send back to build", kind:"ghost", needsComment:true},
+    {to:"final_rejected",  label:"Reject", kind:"rose", needsComment:true},
+  ],
+  ready_to_deploy:  [{to:"deploying", label:"Start deployment", kind:"primary"}],
+  deploying:        [{to:"live", label:"Mark as live", kind:"primary"}],
+  live:             [],
+  rejected:         [],
+  final_rejected:   [],
+};
+
+const uid = () => Math.random().toString(36).slice(2,9);
+const now = () => Date.now();
+const fmtDate = t => new Date(t).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+const fmtHrs = secs => { const h=Math.floor(secs/3600), m=Math.floor(secs%3600/60); return `${h}h ${String(m).padStart(2,"0")}m`; };
+const fmtClock = secs => { const h=Math.floor(secs/3600),m=Math.floor(secs%3600/60),s=Math.floor(secs%60);
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`; };
+
+/* ---------- seed data ---------- */
+function seed(){
+  const t = now();
+  const day = 86400000;
+  const mk = (title,problem,benefit,est,prio,cat,tools,status,extra={}) => ({
+    id:uid(), title, problem, benefit, est, prio, cat, tools, status,
+    createdBy:"Maya Ops", createdAt:t-3*day,
+    comments:extra.comments||[], history:extra.history||[{to:status,by:"Maya Ops",at:t-3*day,note:""}],
+    sessions:extra.sessions||[], running:null,
+  });
+  return [
+    mk("Auto-fill daily shift report",
+       "Supervisors retype the same shift numbers into 3 systems every evening.",
+       "Saves ~40 min/day per supervisor and removes copy-paste errors.",
+       12,"High","Reporting","React form + Sheets API","pending_approval",
+       {history:[{to:"draft",by:"Maya Ops",at:t-3*day,note:""},{to:"pending_approval",by:"Maya Ops",at:t-2*day,note:""}]}),
+    mk("Warehouse label QR generator",
+       "Labels are made by hand in Word, slow and inconsistent.",
+       "Bulk-generate scannable labels in seconds.",
+       8,"Medium","Tooling","HTML + qrcode.js","building",
+       {history:[
+         {to:"draft",by:"Omar Ops",at:t-6*day,note:""},
+         {to:"pending_approval",by:"Omar Ops",at:t-5*day,note:""},
+         {to:"it_review",by:"Grace Mgr",at:t-5*day,note:"Looks worthwhile."},
+         {to:"building",by:"Ivan IT",at:t-4*day,note:"No security concerns."},
+       ],
+        sessions:[{id:uid(),start:t-2*day,end:t-2*day+5400000}]}),
+    mk("Returns intake checklist app",
+       "Paper checklists get lost; no audit trail for returned goods.",
+       "Digital checklist with timestamps and photo capture.",
+       16,"High","Operations","React + IndexedDB","final_review",
+       {history:[
+         {to:"draft",by:"Priya Ops",at:t-9*day,note:""},
+         {to:"pending_approval",by:"Priya Ops",at:t-8*day,note:""},
+         {to:"it_review",by:"Daniel Mgr",at:t-8*day,note:"Approved."},
+         {to:"building",by:"Lena IT",at:t-7*day,note:"Cleared."},
+         {to:"final_review",by:"Priya Ops",at:t-1*day,note:"Built and tested, ready for review."},
+       ],
+        sessions:[{id:uid(),start:t-5*day,end:t-5*day+7*3600000},{id:uid(),start:t-3*day,end:t-3*day+5*3600000}]}),
+  ];
+}
+
+/* ---------- app ---------- */
+const ROLE_USER = {operation:"Maya Ops", management:"Grace Mgr", it:"Ivan IT", admin:"Admin User"};
+
+function App(){
+  const [role,setRole] = useState(()=> store.get("vp_role") || "operation");
+  const [props_,setProps] = useState(()=>{
+    try{ const raw=store.get("vp_data"); if(raw) return JSON.parse(raw); }catch(e){}
+    return seed();
+  });
+  const [selId,setSelId] = useState(()=> store.get("vp_sel") || null);
+  const [creating,setCreating] = useState(false);
+  const [modal,setModal] = useState(null); // {action, propId}
+
+  useEffect(()=>{ store.set("vp_data", JSON.stringify(props_)); },[props_]);
+  useEffect(()=>{ store.set("vp_role", role); },[role]);
+  useEffect(()=>{ if(selId) store.set("vp_sel", selId); },[selId]);
+
+  const sel = props_.find(p=>p.id===selId) || null;
+  const me = ROLE_USER[role];
+
+  const update = (id, fn) => setProps(ps => ps.map(p => p.id===id ? fn({...p}) : p));
+
+  const applyAction = (p, action, note="") => {
+    update(p.id, d => {
+      // stop any running timer when leaving a timer stage
+      if(d.running && !(S[action.to]?.timer)){
+        d.sessions = [...d.sessions, {id:uid(), start:d.running, end:now()}];
+        d.running = null;
+      }
+      d.status = action.to;
+      d.history = [...d.history, {to:action.to, by:me, at:now(), note}];
+      if(note) d.comments = [...d.comments, {id:uid(), by:me, role, at:now(), body:note}];
+      return d;
+    });
+  };
+
+  const onAction = (p, action) => {
+    if(action.needsComment){ setModal({action, propId:p.id}); return; }
+    applyAction(p, action);
+  };
+
+  const addComment = (p, body) => update(p.id, d => {
+    d.comments = [...d.comments, {id:uid(), by:me, role, at:now(), body}];
+    return d;
+  });
+
+  const toggleTimer = (p) => update(p.id, d => {
+    if(d.running){ d.sessions=[...d.sessions,{id:uid(),start:d.running,end:now()}]; d.running=null; }
+    else { d.running = now(); }
+    return d;
+  });
+
+  const canAct = (p) => role==="admin" || S[p.status]?.owner===role;
+
+  const createProposal = (data) => {
+    const p = {
+      id:uid(), ...data, status:"draft", createdBy:me, createdAt:now(),
+      comments:[], history:[{to:"draft",by:me,at:now(),note:""}], sessions:[], running:null,
+    };
+    setProps(ps=>[p,...ps]); setSelId(p.id); setCreating(false);
+  };
+
+  return (
+    <React.Fragment>
+      <header className="topbar">
+        <div className="brand">
+          <span className="mark">Vibe Proposals</span>
+          <span className="tag">idea → go-live</span>
+        </div>
+        <div className="spacer"></div>
+        <div className="roleswitch" role="tablist" aria-label="Demo role">
+          {Object.keys(DEPTS).map(r=>(
+            <button key={r} data-on={role===r?"1":"0"} onClick={()=>setRole(r)}>{DEPTS[r].label.replace(" Dept.","").replace(" Team","")}</button>
+          ))}
+        </div>
+        <div className="who">viewing as<br/><b>{me}</b></div>
+      </header>
+
+      <div className="wrap">
+        <div className="grid">
+          {/* LEFT: list */}
+          <aside className="panel">
+            <div className="panel-h">
+              <h2>Proposals</h2>
+              {(role==="operation"||role==="admin") &&
+                <button className="btn btn-primary" style={{padding:"7px 12px"}} onClick={()=>{setCreating(true);setSelId(null);}}>+ New</button>}
+            </div>
+            <div className="plist">
+              {props_.length===0 && <div className="empty"><div className="big">No proposals yet</div>Submit the first idea to get started.</div>}
+              {props_.map(p=>{
+                const st=S[p.status];
+                return (
+                  <button key={p.id} className="pcard" data-sel={selId===p.id?"1":"0"}
+                    onClick={()=>{setSelId(p.id);setCreating(false);}}>
+                    <p className="t">{p.title}</p>
+                    <div className="meta">
+                      <span className={"badge b-"+st.color}><span className="dot"></span>{st.label}</span>
+                      <span>·</span><span>{p.prio}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* RIGHT: detail or create */}
+          <main className="panel detail">
+            {creating ? <CreateForm onCancel={()=>setCreating(false)} onCreate={createProposal}/>
+              : !sel ? <div className="empty"><div className="big">Pick a proposal</div>Select one on the left to see its progress, actions, and time log.</div>
+              : <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
+                  onAction={onAction} onToggleTimer={()=>toggleTimer(sel)} onComment={(b)=>addComment(sel,b)} />}
+          </main>
+        </div>
+      </div>
+
+      {modal && (() => {
+        const p = props_.find(x=>x.id===modal.propId);
+        return <CommentModal action={modal.action}
+          onClose={()=>setModal(null)}
+          onSubmit={(note)=>{ applyAction(p, modal.action, note); setModal(null); }}/>;
+      })()}
+    </React.Fragment>
+  );
+}
+
+function Detail({p, role, me, canAct, onAction, onToggleTimer, onComment}){
+  const st = S[p.status];
+  const actions = ACTIONS[p.status] || [];
+
+  // live ticking for running timer
+  const [,tick] = useState(0);
+  useEffect(()=>{ if(!p.running) return; const id=setInterval(()=>tick(t=>t+1),1000); return ()=>clearInterval(id); },[p.running]);
+
+  const loggedSecs = p.sessions.reduce((a,s)=>a+(s.end-s.start)/1000,0) + (p.running?(now()-p.running)/1000:0);
+  const estSecs = (p.est||0)*3600;
+
+  const [draftCmt,setDraftCmt] = useState("");
+
+  return (
+    <div>
+      <div className="detail-top">
+        <div className="eyebrow">{p.cat} · {p.prio} priority</div>
+        <h1>{p.title}</h1>
+        <div className="detail-sub">
+          <span className={"badge b-"+st.color}><span className="dot"></span>{st.label}</span>
+          <span>·</span><span>by {p.createdBy}</span>
+          <span>·</span><span>{fmtDate(p.createdAt)}</span>
+        </div>
+      </div>
+
+      {/* pipeline */}
+      <div className="pipe">
+        {STAGES.map(stg=>{
+          const cur = st.stage;
+          let state = stg.n<cur ? "done" : stg.n===cur ? "active" : "todo";
+          if(st.terminal && p.status!=="live" && stg.n===cur) state="active";
+          const flag = (p.status==="rejected"||p.status==="final_rejected"||p.status==="needs_revision"||p.status==="needs_rework") && stg.n===cur ? "1":"0";
+          return (
+            <div className="step" key={stg.n} data-state={state} data-flag={flag}>
+              <div className="num">{state==="done"?"✓":stg.n}</div>
+              <div className="lbl">{stg.label}</div>
+              <div className="own">{DEPTS[stg.owner].label}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {st.terminal && p.status!=="live" &&
+        <div className="banner" style={{marginTop:6}}>This proposal was {st.label.toLowerCase()} and is closed.</div>}
+
+      {/* actions */}
+      <div className="section">
+        <h3>What happens next</h3>
+        {actions.length===0
+          ? <p className="muted" style={{fontSize:13.5,margin:0}}>{p.status==="live"?"Shipped. Nothing left to do. 🎉":"This proposal is closed."}</p>
+          : canAct
+            ? <div className="actions">
+                {actions.map((a,i)=>(
+                  <button key={i} className={"btn btn-"+a.kind} onClick={()=>onAction(p,a)}>{a.label}</button>
+                ))}
+              </div>
+            : <p className="muted" style={{fontSize:13.5,margin:0}}>
+                Waiting on <b>{DEPTS[st.owner].label}</b>. Switch to that role (top right) to act on this stage.
+              </p>}
+        {canAct && actions.length>0 && <p className="hint">You're acting as {DEPTS[role].label}. Rejecting or sending back asks for a comment.</p>}
+      </div>
+
+      {/* timer (only on build/deploy) */}
+      {st.timer && (
+        <div className="section">
+          <h3>Time tracking</h3>
+          <div className={"timer"+(p.running?"":" idle")}>
+            <div>
+              <div className="clock mono">{fmtClock(loggedSecs)}</div>
+              <div className="sub">{p.running? "TIMER RUNNING":"TOTAL LOGGED"} · est. {p.est}h</div>
+            </div>
+            <div className="spacer" style={{flex:1}}></div>
+            {canAct && <button className={"btn "+(p.running?"btn-rose":"btn-primary")} onClick={onToggleTimer}>
+              {p.running?"Stop timer":"Start timer"}</button>}
+          </div>
+          {p.sessions.length>0 && <div style={{marginTop:14}}>
+            <div className="eyebrow" style={{marginBottom:6}}>Sessions</div>
+            {p.sessions.map(s=>(
+              <div className="logrow" key={s.id}>
+                <span>{fmtDate(s.start)}</span>
+                <span className="mono">{fmtHrs((s.end-s.start)/1000)}</span>
+              </div>
+            ))}
+            <div className="logrow" style={{fontWeight:600}}>
+              <span>Actual vs estimate</span>
+              <span className="mono">{fmtHrs(loggedSecs)} / {p.est}h</span>
+            </div>
+          </div>}
+        </div>
+      )}
+
+      {/* details */}
+      <div className="section">
+        <h3>Details</h3>
+        <dl className="kv">
+          <dt>Problem</dt><dd>{p.problem}</dd>
+          <dt>Expected benefit</dt><dd>{p.benefit}</dd>
+          <dt>Estimated effort</dt><dd>{p.est} hours</dd>
+          <dt>Planned tools</dt><dd>{p.tools||"—"}</dd>
+        </dl>
+      </div>
+
+      {/* comments */}
+      <div className="section">
+        <h3>Discussion</h3>
+        <div className="thread">
+          {p.comments.length===0 && <p className="muted" style={{fontSize:13,margin:0}}>No comments yet.</p>}
+          {p.comments.map(c=>(
+            <div className="cmt" key={c.id}>
+              <div className="h"><b>{c.by}</b> · {DEPTS[c.role]?.label} · {fmtDate(c.at)}</div>
+              <div className="body">{c.body}</div>
+            </div>
+          ))}
+        </div>
+        <div className="row" style={{marginTop:12}}>
+          <input className="in" style={{flex:1}} placeholder="Add a comment…" value={draftCmt}
+            onChange={e=>setDraftCmt(e.target.value)}
+            onKeyDown={e=>{ if(e.key==="Enter"&&draftCmt.trim()){ onComment(draftCmt.trim()); setDraftCmt(""); } }}/>
+          <button className="btn" disabled={!draftCmt.trim()} onClick={()=>{ onComment(draftCmt.trim()); setDraftCmt(""); }}>Post</button>
+        </div>
+      </div>
+
+      {/* history */}
+      <div className="section">
+        <h3>History</h3>
+        <ul className="hist">
+          {[...p.history].reverse().map((h,i)=>(
+            <li key={i}>
+              <span className="tick"></span>
+              <span>moved to <b>{S[h.to]?.label||h.to}</b> by {h.by} <span className="when">· {fmtDate(h.at)}</span>
+                {h.note && <div className="muted" style={{marginTop:2}}>“{h.note}”</div>}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function CreateForm({onCancel,onCreate}){
+  const [f,setF] = useState({title:"",problem:"",benefit:"",est:8,prio:"Medium",cat:"Tooling",tools:""});
+  const set = (k,v)=>setF(s=>({...s,[k]:v}));
+  const valid = f.title.trim() && f.problem.trim() && f.benefit.trim();
+  return (
+    <div>
+      <div className="detail-top">
+        <div className="eyebrow">New proposal · Operation Dept.</div>
+        <h1>Submit a vibe-coding idea</h1>
+        <p className="detail-sub">Describe the problem and the win. It starts as a draft you can submit for approval.</p>
+      </div>
+      <div className="section">
+        <div className="form">
+          <div className="full">
+            <label className="f">Title</label>
+            <input className="in" value={f.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Auto-fill daily shift report"/>
+          </div>
+          <div className="full">
+            <label className="f">Problem it solves</label>
+            <textarea className="in" value={f.problem} onChange={e=>set("problem",e.target.value)} placeholder="What's painful today?"/>
+          </div>
+          <div className="full">
+            <label className="f">Expected benefit</label>
+            <textarea className="in" value={f.benefit} onChange={e=>set("benefit",e.target.value)} placeholder="Time saved, errors removed, etc."/>
+          </div>
+          <div>
+            <label className="f">Estimated hours</label>
+            <input className="in" type="number" min="1" value={f.est} onChange={e=>set("est",Number(e.target.value))}/>
+          </div>
+          <div>
+            <label className="f">Priority</label>
+            <select className="in" value={f.prio} onChange={e=>set("prio",e.target.value)}>
+              <option>Low</option><option>Medium</option><option>High</option>
+            </select>
+          </div>
+          <div>
+            <label className="f">Category</label>
+            <select className="in" value={f.cat} onChange={e=>set("cat",e.target.value)}>
+              <option>Tooling</option><option>Reporting</option><option>Operations</option><option>Automation</option>
+            </select>
+          </div>
+          <div>
+            <label className="f">Planned tools</label>
+            <input className="in" value={f.tools} onChange={e=>set("tools",e.target.value)} placeholder="React, Sheets API…"/>
+          </div>
+        </div>
+        <div className="actions" style={{marginTop:18}}>
+          <button className="btn btn-primary" disabled={!valid} onClick={()=>onCreate(f)}>Create draft</button>
+          <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+        </div>
+        {!valid && <p className="hint">Title, problem, and benefit are required.</p>}
+      </div>
+    </div>
+  );
+}
+
+function CommentModal({action,onClose,onSubmit}){
+  const [note,setNote] = useState("");
+  const ref = useRef(null);
+  useEffect(()=>{ ref.current && ref.current.focus(); },[]);
+  const reject = action.to==="rejected"||action.to==="final_rejected";
+  return (
+    <div className="modal-bg" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="modal">
+        <h3>{action.label}</h3>
+        <p>{reject? "Add a reason — the submitter will see this." : "Tell the submitter what to change."}</p>
+        <textarea ref={ref} className="in" style={{minHeight:90}} value={note}
+          onChange={e=>setNote(e.target.value)} placeholder="Your comment…"/>
+        <div className="actions" style={{marginTop:16}}>
+          <button className={"btn "+(reject?"btn-rose":"btn-primary")} disabled={!note.trim()} onClick={()=>onSubmit(note.trim())}>
+            {action.label}
+          </button>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
