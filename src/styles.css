@@ -48,6 +48,7 @@ a{color:inherit}
   color:var(--ink);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:11px;transition:.15s;
   box-shadow:0 2px 6px rgba(15,23,42,.06),inset 0 1px 0 rgba(255,255,255,.9)}
 .iconbtn:hover{background:linear-gradient(180deg,#ffffff,var(--silver-3));transform:translateY(-1px)}
+.iconbtn-only{padding:8px 11px;font-size:15px;line-height:1;position:relative;z-index:1}
 .conn{display:flex;align-items:center;gap:6px;font-size:12px;color:#bcd8cb;white-space:nowrap}
 .conn .dot{width:7px;height:7px;border-radius:50%}
 .conn.live .dot{background:#3ad29f;box-shadow:0 0 0 3px rgba(58,210,159,.25)}
@@ -223,9 +224,8 @@ textarea.in{min-height:80px;resize:vertical}
 .hero{padding:28px 28px 22px;border-radius:18px;background:#ffffff;
   border:1px solid #dbe1ea;box-shadow:0 1px 2px rgba(15,23,42,.04),0 18px 46px rgba(15,23,42,.12)}
 .hero-head{margin-bottom:2px}
-.hero-title{margin:0 0 7px;font-family:"Sora",sans-serif;font-size:30px;line-height:1.08;
-  font-weight:700;letter-spacing:-.02em;color:var(--ink)}
-.hero-sub{font-family:"Sora",sans-serif;font-size:14px;color:var(--ink-2);font-weight:600}
+.hero-title{margin:0;font-family:"Poppins",sans-serif;font-size:31px;line-height:1.12;
+  font-weight:700;letter-spacing:-.01em;color:var(--ink)}
 
 /* wide "new proposal" button below the flowchart */
 .newbtn-wide{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:20px;
@@ -259,9 +259,10 @@ textarea.in{min-height:80px;resize:vertical}
   background:linear-gradient(180deg,#ffffff,var(--silver-1));border:1px solid var(--glass-border);border-radius:14px;
   padding:15px 6px 12px;box-shadow:0 2px 8px rgba(15,23,42,.05),inset 0 1px 0 rgba(255,255,255,.9);transition:.16s}
 .flowstep:hover{transform:translateY(-3px);border-color:rgba(15,23,42,.22);box-shadow:0 12px 26px rgba(15,23,42,.12)}
-.flowicon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;
+.flowicon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#2a3340;
   background:linear-gradient(180deg,#ffffff,var(--silver-2));border:1px solid var(--glass-border);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 10px rgba(15,23,42,.06);transition:.16s}
+.flowicon svg{width:21px;height:21px}
 .flowstepno{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
   color:#8c97a6;font-weight:700}
 .flowlbl{font-family:"Sora";font-weight:700;font-size:11.5px;color:var(--ink);line-height:1.15;
@@ -269,7 +270,7 @@ textarea.in{min-height:80px;resize:vertical}
 .flowstep[data-active="1"]{border-color:#11161c;background:linear-gradient(180deg,#ffffff,#eef1f5);
   box-shadow:0 10px 24px rgba(15,23,42,.16)}
 .flowstep[data-active="1"] .flowicon{background:linear-gradient(180deg,#2a3340,#11161c);border-color:#11161c;
-  box-shadow:0 6px 14px rgba(15,23,42,.3)}
+  color:#fff;box-shadow:0 6px 14px rgba(15,23,42,.3)}
 .flowcount{position:absolute;top:-7px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;
   background:#11161c;color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center;
   font-family:"JetBrains Mono",monospace;box-shadow:0 3px 8px rgba(15,23,42,.3);z-index:2}

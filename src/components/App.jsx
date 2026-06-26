@@ -169,7 +169,7 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
         {flowchart}
         <section className="panel">
           <div className="panel-h">
-            <h2>{activeStg ? `${activeStg.icon} ${activeStg.label}` : 'Submitted & approved proposals'}</h2>
+            <h2>{activeStg ? activeStg.label : 'Submitted proposals'}</h2>
             <span className="pill">{homeList.length}{activeStg ? ' here' : ' total'}</span>
           </div>
           <div className="filterbar">
@@ -199,8 +199,7 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
           <span className="mark">Vibe Coding Project Management</span>
         </button>
         <div className="spacer"></div>
-        {mode === 'live' && <div className="who">signed in as<br /><b>{me}</b> · {DEPTS[role]?.label || role}</div>}
-        <button className="iconbtn" onClick={() => setAccess(true)} title="User access">⚙ Settings</button>
+        <button className="iconbtn iconbtn-only" onClick={() => setAccess(true)} title="User access" aria-label="User access">⚙</button>
         {mode === 'live' && <button className="iconbtn" onClick={onSignOut}>Sign out</button>}
       </header>
 
