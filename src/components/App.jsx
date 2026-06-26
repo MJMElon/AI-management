@@ -32,6 +32,7 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
   const [modal, setModal] = useState(null) // comment modal {action, propId}
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState('all')
+  const [stageFilter, setStageFilter] = useState(null) // flowchart step filter (1..6)
   const [preview, setPreview] = useState(null) // attachment being previewed
   const [route, setRoute] = useState(parseHash)
 
@@ -87,11 +88,12 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
 
   const homeList = useMemo(() => {
     let arr = props_
-    if (filter === 'active') arr = arr.filter((p) => !S[p.status]?.terminal)
+    if (stageFilter) arr = arr.filter((p) => S[p.status]?.stage === stageFilter)
+    else if (filter === 'active') arr = arr.filter((p) => !S[p.status]?.terminal)
     else if (filter === 'closed') arr = arr.filter((p) => S[p.status]?.terminal)
     else if (filter === 'waiting') arr = arr.filter((p) => (ACTIONS[p.status] || []).length > 0)
     return filterList(arr)
-  }, [props_, filter, q])
+  }, [props_, filter, q, stageFilter])
 
   /* ---------- shared bits ---------- */
   const ListRows = ({ items }) => (
@@ -125,9 +127,9 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
   const flowchart = (
     <Flowchart
       countByStage={countByStage}
-      activeStage={route.name === 'stage' ? route.n : null}
+      activeStage={stageFilter}
       onSubmit={() => go('/submit')}
-      onPickStage={(n) => go(`/stage/${n}`)}
+      onPickStage={(n) => setStageFilter((cur) => (cur === n ? null : n))}
       canCreate={canCreate}
     />
   )
@@ -156,39 +158,28 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
               {!loading && 'It may have been removed.'}</div>}
       </section>
     )
-  } else if (route.name === 'stage') {
-    const stg = STAGES.find((s) => s.n === route.n)
-    const items = filterList(props_.filter((p) => S[p.status]?.stage === route.n))
-    page = (
-      <>
-        {flowchart}
-        <section className="panel">
-          <div className="panel-h">
-            <h2>{stg ? `${stg.icon} ${stg.label}` : 'Stage'} <span className="muted" style={{ fontWeight: 400 }}>· {items.length}</span></h2>
-            <button className="backlink" onClick={() => go('/')}>Show all</button>
-          </div>
-          <div className="filterbar">
-            <input className="in" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search proposals" />
-          </div>
-          <ListRows items={items} />
-        </section>
-      </>
-    )
   } else {
     // home
+    const activeStg = stageFilter ? STAGES.find((s) => s.n === stageFilter) : null
     page = (
       <>
         {flowchart}
         <section className="panel">
           <div className="panel-h">
-            <h2>Submitted &amp; approved proposals</h2>
-            <span className="pill">{props_.length} total</span>
+            <h2>{activeStg ? `${activeStg.icon} ${activeStg.label}` : 'Submitted & approved proposals'}</h2>
+            <span className="pill">{homeList.length}{activeStg ? ' here' : ' total'}</span>
           </div>
           <div className="filterbar">
             <input className="in" placeholder="Search proposals…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search proposals" />
             <div className="chips">
+              {activeStg && (
+                <button className="chip" data-on="1" onClick={() => setStageFilter(null)}>
+                  {activeStg.label} ✕
+                </button>
+              )}
               {FILTERS.map((f) => (
-                <button key={f.k} className="chip" data-on={filter === f.k ? '1' : '0'} onClick={() => setFilter(f.k)}>{f.label}</button>
+                <button key={f.k} className="chip" data-on={!stageFilter && filter === f.k ? '1' : '0'}
+                  onClick={() => { setStageFilter(null); setFilter(f.k) }}>{f.label}</button>
               ))}
             </div>
           </div>
