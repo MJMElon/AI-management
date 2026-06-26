@@ -36,10 +36,10 @@ export function makeDemoApi() {
     async load() { return read() },
     async create(data, me, files = []) {
       const p = {
-        id: uid(), ...data, status: 'draft', createdBy: me, createdAt: now(),
+        id: uid(), ...data, est: data.est || 0, status: 'draft', createdBy: me, createdAt: now(),
         comments: [], history: [{ to: 'draft', by: me, at: now(), note: '' }], sessions: [], running: null,
-        // demo can't really store files — keep name/size so the UI is honest
-        attachments: Array.from(files).map((f) => ({ id: uid(), name: f.name, size: f.size, path: null })),
+        // demo can't really store files — keep name/size/kind so the UI is honest
+        attachments: (files || []).map((x) => ({ id: uid(), name: x.file.name, size: x.file.size, kind: x.kind || 'file', path: null })),
       }
       return write([p, ...read()])
     },
@@ -91,7 +91,7 @@ function mapProposal(row, names, dept, cBy, hBy, sBy, aBy) {
       id: s.id, start: new Date(s.started_at).getTime(), end: new Date(s.ended_at).getTime(),
     })),
     running: open ? new Date(open.started_at).getTime() : null,
-    attachments: (aBy[row.id] || []).map((a) => ({ id: a.id, name: a.name, size: a.size, path: a.path })),
+    attachments: (aBy[row.id] || []).map((a) => ({ id: a.id, name: a.name, size: a.size, path: a.path, kind: a.kind || 'file' })),
   }
 }
 
@@ -117,12 +117,14 @@ export function makeLiveApi(sb, user) {
   }
 
   async function uploadFiles(proposalId, files) {
-    for (const file of Array.from(files || [])) {
+    for (const item of files || []) {
+      const file = item.file
+      const kind = item.kind || 'file'
       const path = `${proposalId}/${uid()}-${file.name}`
       const { error: upErr } = await sb.storage.from(BUCKET).upload(path, file, { upsert: false })
       if (upErr) throw upErr
       const { error: rowErr } = await sb.from(T.attachments).insert({
-        proposal_id: proposalId, name: file.name, path, size: file.size, uploaded_by: user.id,
+        proposal_id: proposalId, name: file.name, path, size: file.size, kind, uploaded_by: user.id,
       })
       if (rowErr) throw rowErr
     }
@@ -131,10 +133,10 @@ export function makeLiveApi(sb, user) {
   return {
     mode: 'live', load,
     async create(data, _me, files = []) {
+      // est_hours / priority / category are left to their column defaults.
       const { data: rows, error } = await sb.from(T.proposals).insert({
         title: data.title, problem: data.problem, benefit: data.benefit,
-        est_hours: data.est, priority: data.prio, category: data.cat, tools: data.tools || null,
-        created_by: user.id, status: 'draft',
+        tools: data.tools || null, created_by: user.id, status: 'draft',
       }).select('id').single()
       if (error) throw error
       await sb.from(T.history).insert({ proposal_id: rows.id, to_status: 'draft', actor_id: user.id })

@@ -112,9 +112,11 @@ create table if not exists ai_management_attachments (
   name        text not null,
   path        text not null,
   size        bigint,
+  kind        text not null default 'file',  -- 'slide' | 'file'
   uploaded_by uuid not null references ai_management_profiles(id),
   created_at  timestamptz not null default now()
 );
+alter table ai_management_attachments add column if not exists kind text not null default 'file';
 
 -- ============================================================
 --  ROW LEVEL SECURITY

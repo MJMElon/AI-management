@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { DEPTS, S, STAGES, ACTIONS, now, fmtDate, fmtHrs, fmtClock, fmtSize } from '../lib/model.js'
 
-export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, onComment, onDownload }) {
+const lines = (s) => (s || '').split('\n').map((x) => x.trim()).filter(Boolean)
+
+export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, onComment, onPreview }) {
   const st = S[p.status]
   const actions = ACTIONS[p.status] || []
+  const problemRows = lines(p.problem)
+  const toolRows = lines(p.tools)
+  const slides = (p.attachments || []).filter((a) => a.kind === 'slide')
+  const otherFiles = (p.attachments || []).filter((a) => a.kind !== 'slide')
 
   // live ticking for running timer
   const [, tick] = useState(0)
@@ -20,7 +26,7 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
   return (
     <div>
       <div className="detail-top">
-        <div className="eyebrow">{p.cat} · {p.prio} priority</div>
+        <div className="eyebrow">Proposal</div>
         <h1>{p.title}</h1>
         <div className="detail-sub">
           <span className={'badge b-' + st.color}><span className="dot"></span>{st.label}</span>
@@ -77,7 +83,7 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
           <div className={'timer' + (p.running ? '' : ' idle')}>
             <div>
               <div className="clock mono">{fmtClock(loggedSecs)}</div>
-              <div className="sub">{p.running ? 'TIMER RUNNING' : 'TOTAL LOGGED'} · est. {p.est}h</div>
+              <div className="sub">{p.running ? 'TIMER RUNNING' : 'TOTAL LOGGED'}{p.est ? ` · est. ${p.est}h` : ''}</div>
             </div>
             <div className="spacer" style={{ flex: 1 }}></div>
             {canAct && <button className={'btn ' + (p.running ? 'btn-rose' : 'btn-primary')} onClick={onToggleTimer}>
@@ -92,8 +98,8 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
               </div>
             ))}
             <div className="logrow" style={{ fontWeight: 600 }}>
-              <span>Actual vs estimate</span>
-              <span className="mono">{fmtHrs(loggedSecs)} / {p.est}h</span>
+              <span>Actual logged</span>
+              <span className="mono">{fmtHrs(loggedSecs)}{p.est ? ` / ${p.est}h` : ''}</span>
             </div>
           </div>}
         </div>
@@ -102,29 +108,26 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
       {/* details */}
       <div className="section">
         <h3>Details</h3>
-        <dl className="kv">
-          <dt>Problem</dt><dd>{p.problem}</dd>
-          <dt>Expected benefit</dt><dd>{p.benefit}</dd>
-          <dt>Estimated effort</dt><dd>{p.est} hours</dd>
-          <dt>Planned tools</dt><dd>{p.tools || '—'}</dd>
-        </dl>
+        <div className="eyebrow" style={{ marginBottom: 6 }}>Problem it solves</div>
+        {problemRows.length > 1
+          ? <ul className="bullets">{problemRows.map((x, i) => <li key={i}>{x}</li>)}</ul>
+          : <p style={{ margin: '0 0 14px', fontSize: 13.5 }}>{problemRows[0] || '—'}</p>}
+
+        <div className="eyebrow" style={{ marginBottom: 6 }}>Value created calculation</div>
+        <p style={{ margin: '0 0 14px', fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{p.benefit || '—'}</p>
+
+        <div className="eyebrow" style={{ marginBottom: 6 }}>Planned tools</div>
+        {toolRows.length > 1
+          ? <ul className="bullets" style={{ margin: 0 }}>{toolRows.map((x, i) => <li key={i}>{x}</li>)}</ul>
+          : <p style={{ margin: 0, fontSize: 13.5 }}>{toolRows[0] || '—'}</p>}
       </div>
 
       {/* attachments */}
-      {p.attachments && p.attachments.length > 0 && (
+      {(slides.length > 0 || otherFiles.length > 0) && (
         <div className="section">
           <h3>Attachments</h3>
-          <div className="filelist">
-            {p.attachments.map((a) => (
-              <div className="filerow" key={a.id}>
-                <span className="filename">📎 {a.name}</span>
-                {a.size != null && <span className="muted mono">{fmtSize(a.size)}</span>}
-                {a.path
-                  ? <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 12.5 }} onClick={() => onDownload(a)}>Download</button>
-                  : <span className="muted" style={{ fontSize: 12 }}>demo</span>}
-              </div>
-            ))}
-          </div>
+          {slides.length > 0 && <AttachGroup title="Presentation slides" items={slides} onPreview={onPreview} />}
+          {otherFiles.length > 0 && <AttachGroup title="Other files" items={otherFiles} onPreview={onPreview} />}
         </div>
       )}
 
@@ -160,6 +163,23 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
             </li>
           ))}
         </ul>
+      </div>
+    </div>
+  )
+}
+
+function AttachGroup({ title, items, onPreview }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div className="eyebrow" style={{ marginBottom: 6 }}>{title}</div>
+      <div className="filelist">
+        {items.map((a) => (
+          <button key={a.id} className="filerow filerow-btn" onClick={() => onPreview(a)}>
+            <span className="filename">📎 {a.name}</span>
+            {a.size != null && <span className="muted mono">{fmtSize(a.size)}</span>}
+            <span className="filview">{a.path ? 'View' : 'demo'}</span>
+          </button>
+        ))}
       </div>
     </div>
   )

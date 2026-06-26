@@ -5,6 +5,7 @@ import Flowchart from './Flowchart.jsx'
 import Detail from './Detail.jsx'
 import CreateForm from './CreateForm.jsx'
 import CommentModal from './CommentModal.jsx'
+import PreviewModal from './PreviewModal.jsx'
 
 const FILTERS = [
   { k: 'all', label: 'All' },
@@ -31,6 +32,7 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
   const [modal, setModal] = useState(null) // comment modal {action, propId}
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState('all')
+  const [preview, setPreview] = useState(null) // attachment being previewed
   const [route, setRoute] = useState(parseHash)
 
   useEffect(() => {
@@ -70,7 +72,6 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
     setProps(arr)
     go(arr[0] ? `/p/${arr[0].id}` : '/')
   }
-  const download = async (att) => { const url = await api.fileUrl(att); if (url) window.open(url, '_blank') }
 
   const countByStage = useMemo(() => {
     const c = {}
@@ -108,8 +109,6 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
               <p className="t">{p.title}</p>
               <div className="meta">
                 <span className={'badge b-' + st.color}><span className="dot"></span>{st.label}</span>
-                <span>·</span><span>{p.prio} priority</span>
-                <span>·</span><span>{p.cat}</span>
                 {nAtt > 0 && <><span>·</span><span>📎 {nAtt}</span></>}
               </div>
             </div>
@@ -152,7 +151,7 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
         {sel
           ? <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
               onAction={onAction} onToggleTimer={() => toggleTimer(sel)} onComment={(b) => addComment(sel, b)}
-              onDownload={download} />
+              onPreview={setPreview} />
           : <div className="empty"><div className="big">{loading ? 'Loading…' : 'Proposal not found'}</div>
               {!loading && 'It may have been removed.'}</div>}
       </section>
@@ -227,6 +226,9 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
           onClose={() => setModal(null)}
           onSubmit={(note) => { applyAction(p, modal.action, note); setModal(null) }} />
       })()}
+
+      {/* Attachment preview popup */}
+      {preview && <PreviewModal att={preview} getUrl={api.fileUrl} onClose={() => setPreview(null)} />}
     </>
   )
 }
