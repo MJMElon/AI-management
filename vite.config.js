@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// base: './' keeps asset paths relative so the build works both at a domain
-// root and under a GitHub Pages project subpath (/<repo>/).
+// Absolute base for the GitHub Pages project site. This makes asset URLs
+// resolve correctly even when the page is opened WITHOUT the trailing slash
+// (https://<user>.github.io/AI-management), which relative './' breaks.
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/AI-management/',
 })
