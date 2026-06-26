@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { S, ACTIONS, STAGES, DEPTS, fmtDate } from '../lib/model.js'
+import { S, DEPTS, fmtDate } from '../lib/model.js'
 import { T } from '../lib/tables.js'
 import Flowchart from './Flowchart.jsx'
 import Detail from './Detail.jsx'
@@ -7,13 +7,6 @@ import CreateForm from './CreateForm.jsx'
 import CommentModal from './CommentModal.jsx'
 import PreviewModal from './PreviewModal.jsx'
 import AccessModal from './AccessModal.jsx'
-
-const FILTERS = [
-  { k: 'all', label: 'All' },
-  { k: 'active', label: 'Active' },
-  { k: 'waiting', label: 'Awaiting action' },
-  { k: 'closed', label: 'Closed' },
-]
 
 /* ---- tiny hash router (works on static GitHub Pages) ---- */
 function parseHash() {
@@ -32,8 +25,7 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
   const [err, setErr] = useState(null)
   const [modal, setModal] = useState(null) // comment modal {action, propId}
   const [q, setQ] = useState('')
-  const [filter, setFilter] = useState('all')
-  const [stageFilter, setStageFilter] = useState(null) // flowchart step filter (1..6)
+  const [stageFilter, setStageFilter] = useState(null) // flowchart step filter (1..5)
   const [preview, setPreview] = useState(null) // attachment being previewed
   const [access, setAccess] = useState(false)   // user-access settings modal
   const [accessBusy, setAccessBusy] = useState(false)
@@ -92,11 +84,8 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
   const homeList = useMemo(() => {
     let arr = props_
     if (stageFilter) arr = arr.filter((p) => S[p.status]?.stage === stageFilter)
-    else if (filter === 'active') arr = arr.filter((p) => !S[p.status]?.terminal)
-    else if (filter === 'closed') arr = arr.filter((p) => S[p.status]?.terminal)
-    else if (filter === 'waiting') arr = arr.filter((p) => (ACTIONS[p.status] || []).length > 0)
     return filterList(arr)
-  }, [props_, filter, q, stageFilter])
+  }, [props_, q, stageFilter])
 
   /* ---------- shared bits ---------- */
   const ListRows = ({ items }) => (
@@ -163,28 +152,16 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
     )
   } else {
     // home
-    const activeStg = stageFilter ? STAGES.find((s) => s.n === stageFilter) : null
     page = (
       <>
         {flowchart}
         <section className="panel">
           <div className="panel-h">
-            <h2>{activeStg ? activeStg.label : 'Submitted proposals'}</h2>
-            <span className="pill">{homeList.length}{activeStg ? ' here' : ' total'}</span>
+            <h2>Submitted proposals</h2>
+            <span className="pill">{homeList.length}{stageFilter ? ' shown' : ' total'}</span>
           </div>
           <div className="filterbar">
             <input className="in" placeholder="Search proposals…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search proposals" />
-            <div className="chips">
-              {activeStg && (
-                <button className="chip" data-on="1" onClick={() => setStageFilter(null)}>
-                  {activeStg.label} ✕
-                </button>
-              )}
-              {FILTERS.map((f) => (
-                <button key={f.k} className="chip" data-on={!stageFilter && filter === f.k ? '1' : '0'}
-                  onClick={() => { setStageFilter(null); setFilter(f.k) }}>{f.label}</button>
-              ))}
-            </div>
           </div>
           <ListRows items={homeList} />
         </section>

@@ -48,7 +48,7 @@ a{color:inherit}
   color:var(--ink);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:11px;transition:.15s;
   box-shadow:0 2px 6px rgba(15,23,42,.06),inset 0 1px 0 rgba(255,255,255,.9)}
 .iconbtn:hover{background:linear-gradient(180deg,#ffffff,var(--silver-3));transform:translateY(-1px)}
-.iconbtn-only{padding:8px 11px;font-size:15px;line-height:1;position:relative;z-index:1}
+.iconbtn-only{padding:9px 13px;font-size:20px;line-height:1;position:relative;z-index:1}
 .conn{display:flex;align-items:center;gap:6px;font-size:12px;color:#bcd8cb;white-space:nowrap}
 .conn .dot{width:7px;height:7px;border-radius:50%}
 .conn.live .dot{background:#3ad29f;box-shadow:0 0 0 3px rgba(58,210,159,.25)}
@@ -250,30 +250,26 @@ textarea.in{min-height:80px;resize:vertical}
   background:#11161c;border-radius:999px;padding:2px 8px}
 .rolecard-d{font-size:12.5px;color:var(--ink-2);margin-top:4px;line-height:1.4}
 
-/* flowchart — fixed width, tech/metal look, never scrolls sideways */
-.flow{display:flex;align-items:stretch;gap:6px;margin-top:22px;width:100%;overflow:hidden}
-.flowarrow{display:flex;align-items:center;justify-content:center;color:#c2cad6;font-size:14px;font-weight:700;
-  flex:0 0 12px;padding-top:18px}
+/* flowchart — ONE block; steps have no boxes; the active step turns dark */
+.flow{display:flex;align-items:stretch;margin-top:18px;width:100%;overflow:hidden;
+  border:1px solid #dbe1ea;border-radius:14px;background:linear-gradient(180deg,#fbfcfe,#f4f7fb)}
 .flowstep{position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;
-  text-align:center;gap:6px;cursor:pointer;
-  background:linear-gradient(180deg,#ffffff,var(--silver-1));border:1px solid var(--glass-border);border-radius:14px;
-  padding:15px 6px 12px;box-shadow:0 2px 8px rgba(15,23,42,.05),inset 0 1px 0 rgba(255,255,255,.9);transition:.16s}
-.flowstep:hover{transform:translateY(-3px);border-color:rgba(15,23,42,.22);box-shadow:0 12px 26px rgba(15,23,42,.12)}
-.flowicon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#2a3340;
-  background:linear-gradient(180deg,#ffffff,var(--silver-2));border:1px solid var(--glass-border);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 10px rgba(15,23,42,.06);transition:.16s}
-.flowicon svg{width:21px;height:21px}
-.flowstepno{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
-  color:#8c97a6;font-weight:700}
-.flowlbl{font-family:"Sora";font-weight:700;font-size:11.5px;color:var(--ink);line-height:1.15;
+  text-align:center;gap:7px;cursor:pointer;background:transparent;border:0;padding:18px 8px 15px;transition:.16s}
+.flowstep + .flowstep{box-shadow:inset 1px 0 0 #e6eaf1}
+.flowstep:hover{background:rgba(15,23,42,.045)}
+.flowicon{display:grid;place-items:center;color:#2a3340;transition:.16s}
+.flowicon svg{width:28px;height:28px}
+.flowlbl{font-family:"Sora",sans-serif;font-weight:700;font-size:12.5px;color:var(--ink);line-height:1.15;
   overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.flowstep[data-active="1"]{border-color:#11161c;background:linear-gradient(180deg,#ffffff,#eef1f5);
-  box-shadow:0 10px 24px rgba(15,23,42,.16)}
-.flowstep[data-active="1"] .flowicon{background:linear-gradient(180deg,#2a3340,#11161c);border-color:#11161c;
-  color:#fff;box-shadow:0 6px 14px rgba(15,23,42,.3)}
-.flowcount{position:absolute;top:-7px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;
+.flowown{font-size:10.5px;color:var(--ink-2);font-weight:600}
+.flowstep[data-active="1"]{background:linear-gradient(180deg,#2a3340,#11161c)}
+.flowstep[data-active="1"] .flowicon{color:#fff}
+.flowstep[data-active="1"] .flowlbl{color:#fff}
+.flowstep[data-active="1"] .flowown{color:rgba(255,255,255,.72)}
+.flowcount{position:absolute;top:8px;right:9px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;
   background:#11161c;color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center;
-  font-family:"JetBrains Mono",monospace;box-shadow:0 3px 8px rgba(15,23,42,.3);z-index:2}
+  font-family:"JetBrains Mono",monospace;z-index:2}
+.flowstep[data-active="1"] .flowcount{background:#fff;color:#11161c}
 
 /* generic page (submit / detail) */
 .page{padding:20px 22px 24px}

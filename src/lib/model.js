@@ -5,9 +5,9 @@
 // 'management' = Management team (the two approval gates). 'admin' can act on
 // anything; 'it' kept only for legacy profile rows.
 export const DEPTS = {
-  operation: { label: 'Normal User', color: 'slate' },
+  operation: { label: 'Operation Team', color: 'slate' },
   management: { label: 'Management Team', color: 'amber' },
-  it: { label: 'IT', color: 'sky' },
+  it: { label: 'IT Team', color: 'sky' },
   admin: { label: 'Administrator', color: 'rose' },
 }
 
@@ -17,23 +17,22 @@ export const S = {
   pending_approval: { label: 'Pending Approval',    owner: 'management', color: 'amber',   stage: 2 },
   needs_revision:   { label: 'Needs Revision',      owner: 'operation', color: 'slate',   stage: 1 },
   rejected:         { label: 'Rejected',            owner: 'management', color: 'rose',    stage: 2, terminal: true },
-  it_review:        { label: 'Technical Review',    owner: 'operation', color: 'sky',     stage: 3 },
+  it_review:        { label: 'IT Review',           owner: 'operation', color: 'sky',     stage: 3 },
   building:         { label: 'Build & Test',        owner: 'operation', color: 'indigo',  stage: 4, timer: true },
   final_review:     { label: 'Final Review',        owner: 'management', color: 'amber',   stage: 4 },
   needs_rework:     { label: 'Needs Rework',        owner: 'operation', color: 'slate',   stage: 4 },
   final_rejected:   { label: 'Final Rejected',      owner: 'management', color: 'rose',    stage: 4, terminal: true },
   ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'operation', color: 'sky',     stage: 5 },
   deploying:        { label: 'Deploying',           owner: 'operation', color: 'sky',     stage: 5, timer: true },
-  live:             { label: 'Live',                owner: 'operation', color: 'emerald', stage: 6, terminal: true },
+  live:             { label: 'Live',                owner: 'operation', color: 'emerald', stage: 5, terminal: true },
 }
 
 export const STAGES = [
-  { n: 1, label: 'Proposal', owner: 'operation', icon: '📝' },
-  { n: 2, label: 'Approval', owner: 'management', icon: '✅' },
-  { n: 3, label: 'Review', owner: 'operation', icon: '🔍' },
-  { n: 4, label: 'Build & Test', owner: 'operation', icon: '🛠️' },
-  { n: 5, label: 'Deploy', owner: 'operation', icon: '🚀' },
-  { n: 6, label: 'Go Live', owner: 'operation', icon: '🎉' },
+  { n: 1, label: 'Proposal', owner: 'operation' },
+  { n: 2, label: 'Approval', owner: 'management' },
+  { n: 3, label: 'IT Review', owner: 'it' },
+  { n: 4, label: 'Build & Test', owner: 'operation' },
+  { n: 5, label: 'Deploy & Go Live', owner: 'it' },
 ]
 
 // actions available, keyed by status. needsComment => modal asks for a note.
