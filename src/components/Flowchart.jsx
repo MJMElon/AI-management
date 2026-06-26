@@ -7,11 +7,8 @@ export default function Flowchart({ countByStage, activeStage, onSubmit, onPickS
   return (
     <section className="panel hero">
       <div className="hero-head">
-        <div>
-          <h1 className="hero-title">New thoughts? Share to the world.</h1>
-          <div className="hero-sub">Idea become reality process</div>
-        </div>
-        {canCreate && <button className="btn newbtn" onClick={onSubmit}>+ New proposal</button>}
+        <h1 className="hero-title">New thoughts? Share to the world.</h1>
+        <div className="hero-sub">Let the idea become real</div>
       </div>
 
       <div className="flow">
@@ -35,6 +32,13 @@ export default function Flowchart({ countByStage, activeStage, onSubmit, onPickS
           )
         })}
       </div>
+
+      {canCreate && (
+        <button className="newbtn-wide" onClick={onSubmit}>
+          <span className="nb-plus">+</span> New proposal
+          <span className="nb-hint">Start a new vibe-coding idea</span>
+        </button>
+      )}
     </section>
   )
 }

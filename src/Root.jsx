@@ -40,6 +40,18 @@ export default function Root() {
     return () => { alive = false }
   }, [sb, session])
 
+  // Change the current account's role. Live: persist to profiles (RLS allows
+  // editing your own row). Demo: flip local state.
+  const changeRole = async (dept) => {
+    if (sb && session) {
+      const { error } = await sb.from(T.profiles).update({ department: dept }).eq('id', session.user.id)
+      if (error) throw error
+      setProfile((p) => (p ? { ...p, department: dept } : p))
+    } else {
+      setRole(dept)
+    }
+  }
+
   const modal = settings && <SettingsModal current={cfg} onClose={() => setSettings(false)} />
 
   let content
@@ -60,14 +72,13 @@ export default function Root() {
       content = <Auth sb={sb} onOpenSettings={() => setSettings(true)} />
     } else {
       content = (
-        <App mode="live" me={profile.name} role={profile.department} api={liveApi} sb={sb}
-          onSignOut={() => sb.auth.signOut()} onOpenSettings={() => setSettings(true)} />
+        <App mode="live" me={profile.name} role={profile.department} setRole={changeRole} api={liveApi} sb={sb}
+          onSignOut={() => sb.auth.signOut()} />
       )
     }
   } else {
     content = (
-      <App mode="demo" me={ROLE_USER[role]} role={role} setRole={setRole} api={demoApi}
-        onOpenSettings={() => setSettings(true)} />
+      <App mode="demo" me={ROLE_USER[role]} role={role} setRole={changeRole} api={demoApi} />
     )
   }
 

@@ -6,6 +6,7 @@ import Detail from './Detail.jsx'
 import CreateForm from './CreateForm.jsx'
 import CommentModal from './CommentModal.jsx'
 import PreviewModal from './PreviewModal.jsx'
+import AccessModal from './AccessModal.jsx'
 
 const FILTERS = [
   { k: 'all', label: 'All' },
@@ -25,7 +26,7 @@ function parseHash() {
 }
 const go = (path) => { window.location.hash = path }
 
-export default function App({ mode, me, role, api, sb, onSignOut }) {
+export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
   const [props_, setProps] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
@@ -34,6 +35,8 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
   const [filter, setFilter] = useState('all')
   const [stageFilter, setStageFilter] = useState(null) // flowchart step filter (1..6)
   const [preview, setPreview] = useState(null) // attachment being previewed
+  const [access, setAccess] = useState(false)   // user-access settings modal
+  const [accessBusy, setAccessBusy] = useState(false)
   const [route, setRoute] = useState(parseHash)
 
   useEffect(() => {
@@ -196,12 +199,9 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
           <span className="mark">Vibe Coding Project Management</span>
         </button>
         <div className="spacer"></div>
-        {mode === 'live' && (
-          <>
-            <div className="who">signed in as<br /><b>{me}</b></div>
-            <button className="iconbtn" onClick={onSignOut}>Sign out</button>
-          </>
-        )}
+        {mode === 'live' && <div className="who">signed in as<br /><b>{me}</b> · {DEPTS[role]?.label || role}</div>}
+        <button className="iconbtn" onClick={() => setAccess(true)} title="User access">⚙ Settings</button>
+        {mode === 'live' && <button className="iconbtn" onClick={onSignOut}>Sign out</button>}
       </header>
 
       <div className="wrap landing">
@@ -220,6 +220,16 @@ export default function App({ mode, me, role, api, sb, onSignOut }) {
 
       {/* Attachment preview popup */}
       {preview && <PreviewModal att={preview} getUrl={api.fileUrl} onClose={() => setPreview(null)} />}
+
+      {/* User access settings */}
+      {access && (
+        <AccessModal role={role} busy={accessBusy} onClose={() => setAccess(false)}
+          onSelect={async (r) => {
+            if (r === role) { setAccess(false); return }
+            setAccessBusy(true)
+            try { await setRole(r) } finally { setAccessBusy(false); setAccess(false) }
+          }} />
+      )}
     </>
   )
 }

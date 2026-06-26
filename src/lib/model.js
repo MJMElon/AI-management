@@ -1,36 +1,39 @@
 // Domain model: departments, statuses, pipeline stages, allowed actions,
 // plus formatting helpers and the demo seed. No data lives here in live mode.
 
+// Two roles: 'operation' = Normal user (submit, review, build, deploy),
+// 'management' = Management team (the two approval gates). 'admin' can act on
+// anything; 'it' kept only for legacy profile rows.
 export const DEPTS = {
-  operation: { label: 'Operation Dept.', color: 'emerald' },
+  operation: { label: 'Normal User', color: 'slate' },
   management: { label: 'Management Team', color: 'amber' },
-  it: { label: 'IT Dept.', color: 'sky' },
+  it: { label: 'IT', color: 'sky' },
   admin: { label: 'Administrator', color: 'rose' },
 }
 
-// status -> {label, owner dept, badge color, stage index}
+// status -> {label, owner role, badge color, stage index}
 export const S = {
-  draft:            { label: 'Draft',               owner: 'operation',  color: 'slate',   stage: 1 },
+  draft:            { label: 'Draft',               owner: 'operation', color: 'slate',   stage: 1 },
   pending_approval: { label: 'Pending Approval',    owner: 'management', color: 'amber',   stage: 2 },
-  needs_revision:   { label: 'Needs Revision',      owner: 'operation',  color: 'slate',   stage: 1 },
+  needs_revision:   { label: 'Needs Revision',      owner: 'operation', color: 'slate',   stage: 1 },
   rejected:         { label: 'Rejected',            owner: 'management', color: 'rose',    stage: 2, terminal: true },
-  it_review:        { label: 'IT Technical Review', owner: 'it',         color: 'sky',     stage: 3 },
-  building:         { label: 'Build & Test',        owner: 'operation',  color: 'indigo',  stage: 4, timer: true },
+  it_review:        { label: 'Technical Review',    owner: 'operation', color: 'sky',     stage: 3 },
+  building:         { label: 'Build & Test',        owner: 'operation', color: 'indigo',  stage: 4, timer: true },
   final_review:     { label: 'Final Review',        owner: 'management', color: 'amber',   stage: 4 },
-  needs_rework:     { label: 'Needs Rework',        owner: 'operation',  color: 'slate',   stage: 4 },
+  needs_rework:     { label: 'Needs Rework',        owner: 'operation', color: 'slate',   stage: 4 },
   final_rejected:   { label: 'Final Rejected',      owner: 'management', color: 'rose',    stage: 4, terminal: true },
-  ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'it',         color: 'sky',     stage: 5 },
-  deploying:        { label: 'Deploying',           owner: 'it',         color: 'sky',     stage: 5, timer: true },
-  live:             { label: 'Live',                owner: 'it',         color: 'emerald', stage: 6, terminal: true },
+  ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'operation', color: 'sky',     stage: 5 },
+  deploying:        { label: 'Deploying',           owner: 'operation', color: 'sky',     stage: 5, timer: true },
+  live:             { label: 'Live',                owner: 'operation', color: 'emerald', stage: 6, terminal: true },
 }
 
 export const STAGES = [
   { n: 1, label: 'Proposal', owner: 'operation', icon: '📝' },
   { n: 2, label: 'Approval', owner: 'management', icon: '✅' },
-  { n: 3, label: 'IT Review', owner: 'it', icon: '🔍' },
+  { n: 3, label: 'Review', owner: 'operation', icon: '🔍' },
   { n: 4, label: 'Build & Test', owner: 'operation', icon: '🛠️' },
-  { n: 5, label: 'Deploy', owner: 'it', icon: '🚀' },
-  { n: 6, label: 'Go Live', owner: 'it', icon: '🎉' },
+  { n: 5, label: 'Deploy', owner: 'operation', icon: '🚀' },
+  { n: 6, label: 'Go Live', owner: 'operation', icon: '🎉' },
 ]
 
 // actions available, keyed by status. needsComment => modal asks for a note.
