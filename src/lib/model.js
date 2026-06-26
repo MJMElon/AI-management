@@ -25,12 +25,12 @@ export const S = {
 }
 
 export const STAGES = [
-  { n: 1, label: 'Proposal', owner: 'operation' },
-  { n: 2, label: 'Approval', owner: 'management' },
-  { n: 3, label: 'IT Review', owner: 'it' },
-  { n: 4, label: 'Build & Test', owner: 'operation' },
-  { n: 5, label: 'Deploy', owner: 'it' },
-  { n: 6, label: 'Go Live', owner: 'it' },
+  { n: 1, label: 'Proposal', owner: 'operation', icon: '📝' },
+  { n: 2, label: 'Approval', owner: 'management', icon: '✅' },
+  { n: 3, label: 'IT Review', owner: 'it', icon: '🔍' },
+  { n: 4, label: 'Build & Test', owner: 'operation', icon: '🛠️' },
+  { n: 5, label: 'Deploy', owner: 'it', icon: '🚀' },
+  { n: 6, label: 'Go Live', owner: 'it', icon: '🎉' },
 ]
 
 // actions available, keyed by status. needsComment => modal asks for a note.

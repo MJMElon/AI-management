@@ -1,30 +1,43 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { store } from '../lib/store.js'
-import { DEPTS, S, ACTIONS, STAGES, fmtDate } from '../lib/model.js'
+import { S, ACTIONS, STAGES, DEPTS, fmtDate } from '../lib/model.js'
 import { T } from '../lib/tables.js'
 import Flowchart from './Flowchart.jsx'
 import Detail from './Detail.jsx'
 import CreateForm from './CreateForm.jsx'
 import CommentModal from './CommentModal.jsx'
-import Modal from './Modal.jsx'
 
 const FILTERS = [
   { k: 'all', label: 'All' },
   { k: 'active', label: 'Active' },
-  { k: 'waiting', label: 'Awaiting you' },
+  { k: 'waiting', label: 'Awaiting action' },
   { k: 'closed', label: 'Closed' },
 ]
 
-export default function App({ mode, me, role, setRole, api, sb, onSignOut, onOpenSettings }) {
+/* ---- tiny hash router (works on static GitHub Pages) ---- */
+function parseHash() {
+  const h = (window.location.hash || '').replace(/^#/, '')
+  const parts = h.split('/').filter(Boolean)
+  if (parts[0] === 'submit') return { name: 'submit' }
+  if (parts[0] === 'p' && parts[1]) return { name: 'detail', id: parts[1] }
+  if (parts[0] === 'stage' && parts[1]) return { name: 'stage', n: Number(parts[1]) }
+  return { name: 'home' }
+}
+const go = (path) => { window.location.hash = path }
+
+export default function App({ mode, me, role, api, sb, onSignOut }) {
   const [props_, setProps] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
-  const [selId, setSelId] = useState(null)      // open detail popup
-  const [creating, setCreating] = useState(false) // open submit popup
-  const [modal, setModal] = useState(null)       // comment modal {action, propId}
+  const [modal, setModal] = useState(null) // comment modal {action, propId}
   const [q, setQ] = useState('')
-  const [filter, setFilter] = useState('all')    // chip filter
-  const [stageFilter, setStageFilter] = useState(null) // flowchart filter (1..6)
+  const [filter, setFilter] = useState('all')
+  const [route, setRoute] = useState(parseHash)
+
+  useEffect(() => {
+    const onHash = () => { setRoute(parseHash()); window.scrollTo(0, 0) }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   const reload = useCallback(async () => {
     try { setErr(null); setProps(await api.load()) }
@@ -42,7 +55,6 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut, onOpe
     return () => { sb.removeChannel(ch) }
   }, [mode, sb, reload])
 
-  const sel = props_.find((p) => p.id === selId) || null
   const canAct = (p) => role === 'admin' || S[p.status]?.owner === role
   const canCreate = role === 'operation' || role === 'admin'
 
@@ -55,7 +67,8 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut, onOpe
   const toggleTimer = async (p) => { setProps(await api.toggleTimer(p, me)) }
   const createProposal = async (data, files) => {
     const arr = await api.create(data, me, files)
-    setProps(arr); setCreating(false)
+    setProps(arr)
+    go(arr[0] ? `/p/${arr[0].id}` : '/')
   }
   const download = async (att) => { const url = await api.fileUrl(att); if (url) window.open(url, '_blank') }
 
@@ -65,154 +78,148 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut, onOpe
     return c
   }, [props_])
 
-  const counts = useMemo(() => {
-    const c = { total: props_.length, active: 0, waiting: 0 }
-    props_.forEach((p) => {
-      const st = S[p.status]; if (!st) return
-      if (!st.terminal) c.active++
-      const acts = ACTIONS[p.status] || []
-      if (acts.length && (role === 'admin' || st.owner === role)) c.waiting++
-    })
-    return c
-  }, [props_, role])
-
-  const shown = useMemo(() => {
-    let arr = props_
-    if (stageFilter) {
-      arr = arr.filter((p) => S[p.status]?.stage === stageFilter)
-    } else if (filter === 'active') arr = arr.filter((p) => !S[p.status]?.terminal)
-    else if (filter === 'closed') arr = arr.filter((p) => S[p.status]?.terminal)
-    else if (filter === 'waiting') arr = arr.filter((p) => {
-      const acts = ACTIONS[p.status] || []
-      return acts.length && (role === 'admin' || S[p.status]?.owner === role)
-    })
+  const filterList = (arr) => {
     const s = q.trim().toLowerCase()
-    if (s) arr = arr.filter((p) => (p.title + ' ' + p.problem + ' ' + p.cat + ' ' + p.createdBy).toLowerCase().includes(s))
-    return arr
-  }, [props_, filter, q, role, stageFilter])
+    if (!s) return arr
+    return arr.filter((p) => (p.title + ' ' + p.problem + ' ' + p.cat + ' ' + p.createdBy).toLowerCase().includes(s))
+  }
 
-  const pickStage = (n) => { setStageFilter((cur) => (cur === n ? null : n)); setFilter('all') }
-  const pickChip = (k) => { setFilter(k); setStageFilter(null) }
-  const stageLabel = stageFilter ? (STAGES.find((s) => s.n === stageFilter)?.label) : null
+  const homeList = useMemo(() => {
+    let arr = props_
+    if (filter === 'active') arr = arr.filter((p) => !S[p.status]?.terminal)
+    else if (filter === 'closed') arr = arr.filter((p) => S[p.status]?.terminal)
+    else if (filter === 'waiting') arr = arr.filter((p) => (ACTIONS[p.status] || []).length > 0)
+    return filterList(arr)
+  }, [props_, filter, q])
 
-  return (
-    <>
-      <header className="topbar">
-        <div className="brand">
-          <span className="mark">Vibe Proposals</span>
-          <span className="tag">idea → go-live</span>
-        </div>
-        <div className={'conn ' + mode}><span className="dot"></span>{mode === 'live' ? 'Live · Supabase' : 'Demo mode'}</div>
-        <div className="spacer"></div>
-        {mode === 'demo'
-          ? (
-            <div className="roleswitch" role="tablist" aria-label="Demo role">
-              {Object.keys(DEPTS).map((r) => (
-                <button key={r} data-on={role === r ? '1' : '0'} onClick={() => setRole(r)}>
-                  {DEPTS[r].label.replace(' Dept.', '').replace(' Team', '')}
-                </button>
-              ))}
+  /* ---------- shared bits ---------- */
+  const ListRows = ({ items }) => (
+    <div className="plist wide">
+      {loading && <div className="empty">Loading…</div>}
+      {!loading && items.length === 0 &&
+        <div className="empty"><div className="big">{props_.length === 0 ? 'No proposals yet' : 'Nothing here'}</div>
+          {props_.length === 0 ? 'Submit the first idea to get started.' : 'Try a different search or filter.'}</div>}
+      {!loading && items.map((p) => {
+        const st = S[p.status]
+        const nAtt = p.attachments ? p.attachments.length : 0
+        return (
+          <button key={p.id} className="pcard" onClick={() => go(`/p/${p.id}`)}>
+            <div className="pcard-main">
+              <p className="t">{p.title}</p>
+              <div className="meta">
+                <span className={'badge b-' + st.color}><span className="dot"></span>{st.label}</span>
+                <span>·</span><span>{p.prio} priority</span>
+                <span>·</span><span>{p.cat}</span>
+                {nAtt > 0 && <><span>·</span><span>📎 {nAtt}</span></>}
+              </div>
             </div>
-          )
-          : <span className="deptbadge">{DEPTS[role]?.label || role}</span>}
-        <div className="who">{mode === 'live' ? 'signed in as' : 'viewing as'}<br /><b>{me}</b></div>
-        <button className="iconbtn" onClick={onOpenSettings} title="Connect a database">⚙ Settings</button>
-        {mode === 'live' && <button className="iconbtn" onClick={onSignOut}>Sign out</button>}
-      </header>
+            <div className="pcard-side muted">
+              <div>{p.createdBy}</div>
+              <div className="when">{fmtDate(p.createdAt)}</div>
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
 
-      <div className="wrap landing">
-        {err && <div className="errbar" style={{ margin: '0 0 16px' }}>Couldn’t reach the database: {err}</div>}
+  const flowchart = (
+    <Flowchart
+      countByStage={countByStage}
+      activeStage={route.name === 'stage' ? route.n : null}
+      onSubmit={() => go('/submit')}
+      onPickStage={(n) => go(`/stage/${n}`)}
+      canCreate={canCreate}
+    />
+  )
 
-        {/* 1. The clickable process flowchart */}
-        <Flowchart
-          countByStage={countByStage}
-          activeStage={stageFilter}
-          onSubmit={() => { if (canCreate) setCreating(true); else setStageFilter(1) }}
-          onPickStage={pickStage}
-        />
-
-        {/* 2. Add a new proposal */}
-        <section className="panel addnew">
-          <div>
-            <h2>Have an idea?</h2>
-            <p className="muted">{canCreate
-              ? 'Submit a proposal — describe the problem, the benefit, and attach any mockups.'
-              : `New proposals are submitted by ${DEPTS.operation.label}.`}</p>
+  /* ---------- pages ---------- */
+  let page
+  if (route.name === 'submit') {
+    page = (
+      <section className="panel page">
+        <button className="backlink" onClick={() => go('/')}>← Back to process</button>
+        {canCreate
+          ? <CreateForm onCancel={() => go('/')} onCreate={createProposal} canUpload={mode === 'live'} />
+          : <div className="empty"><div className="big">Not available</div>New proposals are submitted by {DEPTS.operation.label}.</div>}
+      </section>
+    )
+  } else if (route.name === 'detail') {
+    const sel = props_.find((p) => p.id === route.id) || null
+    page = (
+      <section className="panel page">
+        <button className="backlink" onClick={() => go('/')}>← Back to process</button>
+        {sel
+          ? <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
+              onAction={onAction} onToggleTimer={() => toggleTimer(sel)} onComment={(b) => addComment(sel, b)}
+              onDownload={download} />
+          : <div className="empty"><div className="big">{loading ? 'Loading…' : 'Proposal not found'}</div>
+              {!loading && 'It may have been removed.'}</div>}
+      </section>
+    )
+  } else if (route.name === 'stage') {
+    const stg = STAGES.find((s) => s.n === route.n)
+    const items = filterList(props_.filter((p) => S[p.status]?.stage === route.n))
+    page = (
+      <>
+        {flowchart}
+        <section className="panel">
+          <div className="panel-h">
+            <h2>{stg ? `${stg.icon} ${stg.label}` : 'Stage'} <span className="muted" style={{ fontWeight: 400 }}>· {items.length}</span></h2>
+            <button className="backlink" onClick={() => go('/')}>Show all</button>
           </div>
-          {canCreate && <button className="btn btn-primary btn-lg" onClick={() => setCreating(true)}>+ New proposal</button>}
+          <div className="filterbar">
+            <input className="in" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search proposals" />
+          </div>
+          <ListRows items={items} />
         </section>
-
-        {/* 3. Submitted & approved proposals */}
+      </>
+    )
+  } else {
+    // home
+    page = (
+      <>
+        {flowchart}
         <section className="panel">
           <div className="panel-h">
             <h2>Submitted &amp; approved proposals</h2>
-            <div className="row" style={{ gap: 14 }}>
-              <span className="pill">{counts.total} total</span>
-              <span className="pill">{counts.active} active</span>
-            </div>
+            <span className="pill">{props_.length} total</span>
           </div>
-
           <div className="filterbar">
             <input className="in" placeholder="Search proposals…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search proposals" />
             <div className="chips">
               {FILTERS.map((f) => (
-                <button key={f.k} className="chip" data-on={!stageFilter && filter === f.k ? '1' : '0'} onClick={() => pickChip(f.k)}>{f.label}</button>
+                <button key={f.k} className="chip" data-on={filter === f.k ? '1' : '0'} onClick={() => setFilter(f.k)}>{f.label}</button>
               ))}
-              {stageFilter && (
-                <button className="chip" data-on="1" onClick={() => setStageFilter(null)}>
-                  Stage: {stageLabel} ✕
-                </button>
-              )}
             </div>
           </div>
-
-          <div className="plist wide">
-            {loading && <div className="empty">Loading…</div>}
-            {!loading && shown.length === 0 &&
-              <div className="empty"><div className="big">{props_.length === 0 ? 'No proposals yet' : 'Nothing matches'}</div>
-                {props_.length === 0 ? 'Submit the first idea to get started.' : 'Try a different search or filter.'}</div>}
-            {!loading && shown.map((p) => {
-              const st = S[p.status]
-              const nAtt = p.attachments ? p.attachments.length : 0
-              return (
-                <button key={p.id} className="pcard" onClick={() => setSelId(p.id)}>
-                  <div className="pcard-main">
-                    <p className="t">{p.title}</p>
-                    <div className="meta">
-                      <span className={'badge b-' + st.color}><span className="dot"></span>{st.label}</span>
-                      <span>·</span><span>{p.prio} priority</span>
-                      <span>·</span><span>{p.cat}</span>
-                      {nAtt > 0 && <><span>·</span><span>📎 {nAtt}</span></>}
-                    </div>
-                  </div>
-                  <div className="pcard-side muted">
-                    <div>{p.createdBy}</div>
-                    <div className="when">{fmtDate(p.createdAt)}</div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
+          <ListRows items={homeList} />
         </section>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <header className="topbar">
+        <button className="brand brandbtn" onClick={() => go('/')}>
+          <span className="mark">Vibe Coding Project Management</span>
+        </button>
+        <div className="spacer"></div>
+        {mode === 'live' && (
+          <>
+            <div className="who">signed in as<br /><b>{me}</b></div>
+            <button className="iconbtn" onClick={onSignOut}>Sign out</button>
+          </>
+        )}
+      </header>
+
+      <div className="wrap landing">
+        {err && <div className="errbar" style={{ margin: '0 0 16px' }}>Couldn’t reach the database: {err}</div>}
+        {page}
       </div>
 
-      {/* Submit proposal popup */}
-      {creating && (
-        <Modal wide onClose={() => setCreating(false)}>
-          <CreateForm onCancel={() => setCreating(false)} onCreate={createProposal} canUpload={mode === 'live'} />
-        </Modal>
-      )}
-
-      {/* Proposal detail popup */}
-      {sel && (
-        <Modal wide onClose={() => setSelId(null)}>
-          <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
-            onAction={onAction} onToggleTimer={() => toggleTimer(sel)} onComment={(b) => addComment(sel, b)}
-            onDownload={download} />
-        </Modal>
-      )}
-
-      {/* Required-note popup (rejections / send-backs), stacks above detail */}
+      {/* Required-note popup (rejections / send-backs) */}
       {modal && (() => {
         const p = props_.find((x) => x.id === modal.propId)
         if (!p) return null

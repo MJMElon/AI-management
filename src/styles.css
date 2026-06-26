@@ -192,35 +192,47 @@ textarea.in{min-height:80px;resize:vertical}
 /* ---------- landing layout ---------- */
 .wrap.landing{max-width:980px;display:flex;flex-direction:column;gap:22px}
 
-/* hero flowchart */
-.hero{padding:24px 24px 26px;background:
-  radial-gradient(900px 320px at 12% -40%, rgba(31,157,107,.10), transparent 70%),var(--card)}
-.hero-head h1{margin:.2em 0 .25em;font-size:27px}
-.hero-head p{margin:0;font-size:14px}
-.flow{display:flex;gap:0;margin-top:20px;overflow-x:auto;padding-bottom:6px}
-.flowstep{position:relative;flex:1 0 0;min-width:132px;display:flex;flex-direction:column;align-items:center;
-  text-align:center;gap:4px;background:transparent;border:0;padding:6px 8px 4px;border-radius:12px;transition:.15s}
-.flowstep:not(:last-child)::after{content:"";position:absolute;top:22px;left:calc(50% + 22px);right:calc(-50% + 22px);
-  height:2px;background:var(--line);z-index:0}
-.flowstep:hover{background:#f5f8f6}
-.flownum{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;z-index:1;
-  font-family:"Space Grotesk";font-weight:700;font-size:16px;background:#eef2ef;color:#8a988f;
-  border:2px solid transparent;transition:.18s}
-.flowlbl{font-family:"Space Grotesk";font-weight:600;font-size:13px;color:var(--ink);margin-top:6px;line-height:1.2}
-.flowown{font-size:10.5px;color:var(--ink-2)}
-.flowstep:hover .flownum{border-color:var(--emerald);color:var(--forest);background:#fff}
-.flowstep[data-active="1"] .flownum{background:var(--forest);color:#eaf3ee;border-color:var(--forest)}
-.flowstep[data-submit="1"] .flownum{background:var(--emerald);color:#fff}
-.flowstep[data-submit="1"]:hover .flownum{filter:brightness(1.05);background:var(--emerald)}
-.flowcount{position:absolute;top:0;right:18px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;
-  background:var(--amber);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;z-index:2}
-.flowcta{margin-top:4px;font-size:11px;font-weight:700;color:var(--emerald)}
+/* brand button (clickable title) */
+.brandbtn{border:0;background:transparent;padding:0;display:flex;align-items:center}
 
-/* add-new band */
-.addnew{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;flex-wrap:wrap}
-.addnew h2{margin:0 0 3px;font-size:18px}
-.addnew p{margin:0;font-size:13.5px}
-.btn-lg{font-size:15px;padding:12px 20px;border-radius:12px}
+/* hero flowchart */
+.hero{padding:26px 26px 24px;background:
+  radial-gradient(1100px 380px at 10% -60%, rgba(31,157,107,.12), transparent 70%),
+  linear-gradient(180deg,#ffffff,#fbfdfb)}
+.hero-head h1{margin:.18em 0 .25em;font-size:28px}
+.hero-head p{margin:0;font-size:14px}
+
+.flow{display:flex;align-items:stretch;gap:8px;margin-top:22px;overflow-x:auto;padding:4px 2px 10px}
+.flowarrow{display:flex;align-items:center;color:#bfcdc5;font-size:22px;font-weight:700;flex:0 0 auto;padding-top:18px}
+.flowstep{position:relative;flex:1 0 0;min-width:138px;display:flex;flex-direction:column;align-items:center;
+  text-align:center;gap:5px;cursor:pointer;
+  background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:16px 10px 13px;
+  box-shadow:0 1px 2px rgba(13,59,46,.04);transition:.16s}
+.flowstep:hover{transform:translateY(-3px);border-color:#bfe0cf;box-shadow:0 10px 22px rgba(13,59,46,.10)}
+.flowicon{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:23px;
+  background:var(--emerald-soft);border:1.5px solid #cdeadd;transition:.16s}
+.flowlbl{font-family:"Space Grotesk";font-weight:600;font-size:13.5px;color:var(--ink);line-height:1.2;margin-top:3px}
+.flowown{font-size:10.5px;color:var(--ink-2)}
+.flowstepno{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#9aa8a1;font-weight:700;margin-top:1px}
+.flowstep[data-active="1"]{border-color:var(--forest);background:#f3f8f5;box-shadow:0 8px 20px rgba(13,59,46,.12)}
+.flowstep[data-active="1"] .flowicon{background:var(--forest);border-color:var(--forest);filter:saturate(1.1)}
+.flowstep[data-submit="1"]{border-color:var(--emerald)}
+.flowstep[data-submit="1"] .flowicon{background:var(--emerald);border-color:var(--emerald);color:#fff}
+.flowstep[data-submit="1"] .flowlbl{color:var(--forest)}
+.flowcount{position:absolute;top:-8px;right:-6px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;
+  background:var(--amber);color:#fff;font-size:11.5px;font-weight:700;display:grid;place-items:center;
+  box-shadow:0 2px 6px rgba(201,138,22,.4);z-index:2}
+
+/* small new-proposal block under the flowchart (under Submit Proposal) */
+.flow-actions{display:flex;align-items:center;gap:12px;margin-top:6px}
+.newbtn{padding:10px 16px;border-radius:11px}
+.flow-actions-hint{font-size:12.5px}
+
+/* generic page (submit / detail) */
+.page{padding:20px 22px 24px}
+.backlink{border:0;background:transparent;color:var(--ink-2);font-weight:600;font-size:13px;padding:4px 0 14px;
+  display:inline-flex;align-items:center;gap:4px}
+.backlink:hover{color:var(--forest)}
 
 /* list rows on landing */
 .plist.wide .pcard{display:flex;align-items:center;justify-content:space-between;gap:14px}
