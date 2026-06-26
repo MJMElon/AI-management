@@ -44,7 +44,17 @@ export default function Root() {
 
   let content
   if (cfg) {
-    if (session === undefined || (session && !profile)) {
+    if (!sb) {
+      content = (
+        <div className="loading" style={{ maxWidth: 520, margin: '80px auto', lineHeight: 1.6 }}>
+          <h1 style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, color: '#16201c' }}>Configuration problem</h1>
+          <p>Couldn’t start the database connection. The site’s Supabase <b>URL</b> looks invalid —
+          check the <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> repository secrets.
+          A common mistake is <b>swapping</b> the two values (URL in the key field, or key in the URL field).</p>
+          <p className="muted">The URL must start with <code>https://</code> and end in <code>.supabase.co</code>.</p>
+        </div>
+      )
+    } else if (session === undefined || (session && !profile)) {
       content = <div className="loading">Connecting…</div>
     } else if (!session) {
       content = <Auth sb={sb} onOpenSettings={() => setSettings(true)} />

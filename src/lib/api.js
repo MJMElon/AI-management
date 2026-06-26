@@ -3,15 +3,20 @@ import { store } from './store.js'
 import { S, seed, uid, now, iso } from './model.js'
 import { T, BUCKET } from './tables.js'
 
-// One Supabase client per (url, key) pair.
+// One Supabase client per (url, key) pair. Returns null (never throws) so a
+// bad URL/key can't blank the page; Root surfaces a clear message instead.
 let _client = null
 let _clientKey = ''
 export function getClient(cfg) {
   if (!cfg) return null
+  if (!/^https?:\/\/[^ ]+/i.test(cfg.url)) {
+    console.error('Supabase URL looks invalid (must start with https://):', cfg.url)
+    return null
+  }
   const k = cfg.url + '|' + cfg.key
   if (!_client || _clientKey !== k) {
-    _client = createClient(cfg.url, cfg.key)
-    _clientKey = k
+    try { _client = createClient(cfg.url, cfg.key); _clientKey = k }
+    catch (e) { console.error('Supabase client init failed:', e); _client = null; _clientKey = '' }
   }
   return _client
 }
