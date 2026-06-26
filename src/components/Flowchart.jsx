@@ -29,7 +29,7 @@ export default function Flowchart({ countByStage, activeStage, onSubmit, onPickS
                 {count > 0 && <span className="flowcount">{count}</span>}
                 <span className="flowicon">{stg.icon}</span>
                 <span className="flowlbl">{stg.label}</span>
-                <span className="flowstepno">Step {stg.n}</span>
+                <span className="flowstepno">{`Step ${String(stg.n).padStart(2, '0')}`}</span>
               </button>
             </React.Fragment>
           )
