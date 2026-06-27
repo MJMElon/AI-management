@@ -73,6 +73,8 @@ export function makeDemoApi() {
       }))
     },
     async fileUrl() { return null }, // demo has no real files to download
+    async listProfiles() { return [] }, // demo has no real users
+    async setProfileRole() {},
   }
 }
 
@@ -175,6 +177,15 @@ export function makeLiveApi(sb, user) {
       if (!att?.path) return null
       const { data } = await sb.storage.from(BUCKET).createSignedUrl(att.path, 3600)
       return data?.signedUrl || null
+    },
+    async listProfiles() {
+      const { data, error } = await sb.from(T.profiles).select('id,name,email,department').order('email', { ascending: true })
+      if (error) throw error
+      return data || []
+    },
+    async setProfileRole(id, dept) {
+      const { error } = await sb.from(T.profiles).update({ department: dept }).eq('id', id)
+      if (error) throw error
     },
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { S, DEPTS, fmtDate } from '../lib/model.js'
+import { S, STAGES, DEPTS, fmtDate } from '../lib/model.js'
 import { T } from '../lib/tables.js'
 import Flowchart from './Flowchart.jsx'
 import Detail from './Detail.jsx'
@@ -7,6 +7,8 @@ import CreateForm from './CreateForm.jsx'
 import CommentModal from './CommentModal.jsx'
 import PreviewModal from './PreviewModal.jsx'
 import AccessModal from './AccessModal.jsx'
+import StageInfoModal from './StageInfoModal.jsx'
+import Modal from './Modal.jsx'
 
 /* ---- tiny hash router (works on static GitHub Pages) ---- */
 function parseHash() {
@@ -19,16 +21,19 @@ function parseHash() {
 }
 const go = (path) => { window.location.hash = path }
 
-export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
+export default function App({ mode, me, role, setRole, api, sb, userId, onSignOut }) {
   const [props_, setProps] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
   const [modal, setModal] = useState(null) // comment modal {action, propId}
   const [q, setQ] = useState('')
-  const [stageFilter, setStageFilter] = useState(null) // flowchart step filter (1..5)
   const [preview, setPreview] = useState(null) // attachment being previewed
+  const [sopStage, setSopStage] = useState(null) // SOP popup for a stage
+  const [creating, setCreating] = useState(false) // new-proposal popup
   const [access, setAccess] = useState(false)   // user-access settings modal
   const [accessBusy, setAccessBusy] = useState(false)
+  const [users, setUsers] = useState(null)      // access list
+  const [accessErr, setAccessErr] = useState(null)
   const [route, setRoute] = useState(parseHash)
 
   useEffect(() => {
@@ -66,7 +71,27 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
   const createProposal = async (data, files) => {
     const arr = await api.create(data, me, files)
     setProps(arr)
-    go(arr[0] ? `/p/${arr[0].id}` : '/')
+    setCreating(false)
+    if (arr[0]) go(`/p/${arr[0].id}`)
+  }
+
+  // user-access settings
+  const openAccess = async () => {
+    setAccess(true); setAccessErr(null)
+    if (mode === 'live') {
+      setUsers(null)
+      try { setUsers(await api.listProfiles()) }
+      catch (e) { setAccessErr(e.message || String(e)); setUsers([]) }
+    }
+  }
+  const changeUserRole = async (u, dept) => {
+    setAccessBusy(true); setAccessErr(null)
+    try {
+      if (u.id === userId) await setRole(dept)
+      else await api.setProfileRole(u.id, dept)
+      setUsers((list) => (list || []).map((x) => (x.id === u.id ? { ...x, department: dept } : x)))
+    } catch (e) { setAccessErr(e.message || String(e)) }
+    finally { setAccessBusy(false) }
   }
 
   const countByStage = useMemo(() => {
@@ -81,11 +106,7 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
     return arr.filter((p) => (p.title + ' ' + p.problem + ' ' + p.cat + ' ' + p.createdBy).toLowerCase().includes(s))
   }
 
-  const homeList = useMemo(() => {
-    let arr = props_
-    if (stageFilter) arr = arr.filter((p) => S[p.status]?.stage === stageFilter)
-    return filterList(arr)
-  }, [props_, q, stageFilter])
+  const homeList = useMemo(() => filterList(props_), [props_, q])
 
   /* ---------- shared bits ---------- */
   const ListRows = ({ items }) => (
@@ -119,25 +140,16 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
   const flowchart = (
     <Flowchart
       countByStage={countByStage}
-      activeStage={stageFilter}
-      onSubmit={() => go('/submit')}
-      onPickStage={(n) => setStageFilter((cur) => (cur === n ? null : n))}
+      activeStage={null}
+      onSubmit={() => setCreating(true)}
+      onPickStage={(n) => setSopStage(STAGES.find((s) => s.n === n))}
       canCreate={canCreate}
     />
   )
 
   /* ---------- pages ---------- */
   let page
-  if (route.name === 'submit') {
-    page = (
-      <section className="panel page">
-        <button className="backlink" onClick={() => go('/')}>← Back to process</button>
-        {canCreate
-          ? <CreateForm onCancel={() => go('/')} onCreate={createProposal} canUpload={mode === 'live'} />
-          : <div className="empty"><div className="big">Not available</div>New proposals are submitted by {DEPTS.operation.label}.</div>}
-      </section>
-    )
-  } else if (route.name === 'detail') {
+  if (route.name === 'detail') {
     const sel = props_.find((p) => p.id === route.id) || null
     page = (
       <section className="panel page">
@@ -158,7 +170,7 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
         <section className="panel">
           <div className="panel-h">
             <h2>Submitted proposals</h2>
-            <span className="pill">{homeList.length}{stageFilter ? ' shown' : ' total'}</span>
+            <span className="pill">{homeList.length} total</span>
           </div>
           <div className="filterbar">
             <input className="in" placeholder="Search proposals…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search proposals" />
@@ -176,7 +188,7 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
           <span className="mark">Vibe Coding Project Management</span>
         </button>
         <div className="spacer"></div>
-        <button className="iconbtn iconbtn-only" onClick={() => setAccess(true)} title="User access" aria-label="User access">⚙</button>
+        <button className="iconbtn iconbtn-only" onClick={openAccess} title="User access" aria-label="User access">⚙</button>
         {mode === 'live' && <button className="iconbtn" onClick={onSignOut}>Sign out</button>}
       </header>
 
@@ -197,14 +209,23 @@ export default function App({ mode, me, role, setRole, api, sb, onSignOut }) {
       {/* Attachment preview popup */}
       {preview && <PreviewModal att={preview} getUrl={api.fileUrl} onClose={() => setPreview(null)} />}
 
+      {/* New-proposal popup */}
+      {creating && (
+        <Modal wide onClose={() => setCreating(false)}>
+          {canCreate
+            ? <CreateForm onCancel={() => setCreating(false)} onCreate={createProposal} canUpload={mode === 'live'} />
+            : <div className="empty"><div className="big">Not available</div>New proposals are submitted by {DEPTS.operation.label}.</div>}
+        </Modal>
+      )}
+
+      {/* Stage SOP popup */}
+      {sopStage && <StageInfoModal stage={sopStage} onClose={() => setSopStage(null)} />}
+
       {/* User access settings */}
       {access && (
-        <AccessModal role={role} busy={accessBusy} onClose={() => setAccess(false)}
-          onSelect={async (r) => {
-            if (r === role) { setAccess(false); return }
-            setAccessBusy(true)
-            try { await setRole(r) } finally { setAccessBusy(false); setAccess(false) }
-          }} />
+        <AccessModal mode={mode} users={users} userId={userId} role={role} busy={accessBusy} error={accessErr}
+          onClose={() => setAccess(false)} onChange={changeUserRole}
+          onSwitch={async (r) => { setAccessBusy(true); try { await setRole(r) } finally { setAccessBusy(false); setAccess(false) } }} />
       )}
     </>
   )

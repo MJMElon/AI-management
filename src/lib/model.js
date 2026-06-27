@@ -17,22 +17,43 @@ export const S = {
   pending_approval: { label: 'Pending Approval',    owner: 'management', color: 'amber',   stage: 2 },
   needs_revision:   { label: 'Needs Revision',      owner: 'operation', color: 'slate',   stage: 1 },
   rejected:         { label: 'Rejected',            owner: 'management', color: 'rose',    stage: 2, terminal: true },
-  it_review:        { label: 'IT Review',           owner: 'operation', color: 'sky',     stage: 3 },
+  it_review:        { label: 'IT Review',           owner: 'it',         color: 'sky',     stage: 3 },
   building:         { label: 'Build & Test',        owner: 'operation', color: 'indigo',  stage: 4, timer: true },
   final_review:     { label: 'Final Review',        owner: 'management', color: 'amber',   stage: 4 },
   needs_rework:     { label: 'Needs Rework',        owner: 'operation', color: 'slate',   stage: 4 },
   final_rejected:   { label: 'Final Rejected',      owner: 'management', color: 'rose',    stage: 4, terminal: true },
-  ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'operation', color: 'sky',     stage: 5 },
-  deploying:        { label: 'Deploying',           owner: 'operation', color: 'sky',     stage: 5, timer: true },
-  live:             { label: 'Live',                owner: 'operation', color: 'emerald', stage: 5, terminal: true },
+  ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'it',         color: 'sky',     stage: 5 },
+  deploying:        { label: 'Deploying',           owner: 'it',         color: 'sky',     stage: 5, timer: true },
+  live:             { label: 'Live',                owner: 'it',         color: 'emerald', stage: 5, terminal: true },
 }
 
 export const STAGES = [
-  { n: 1, label: 'Proposal', owner: 'operation' },
-  { n: 2, label: 'Approval', owner: 'management' },
-  { n: 3, label: 'IT Review', owner: 'it' },
-  { n: 4, label: 'Build & Test', owner: 'operation' },
-  { n: 5, label: 'Deploy & Go Live', owner: 'it' },
+  { n: 1, label: 'Proposal', owner: 'operation', sop: [
+    'Spot a repetitive or painful task that’s worth automating.',
+    'Click “+ New proposal” and fill in the title, the problem (point form), and the value-created calculation.',
+    'List the planned tools and attach any slides or mockups.',
+    'Submit the proposal — it goes to the Management Team for approval.',
+  ] },
+  { n: 2, label: 'Approval', owner: 'management', sop: [
+    'Review the problem statement and the value-created calculation.',
+    'Check the idea fits company priorities and is worth the effort.',
+    'Approve to send it for IT Review, request changes, or reject with a reason.',
+  ] },
+  { n: 3, label: 'IT Review', owner: 'it', sop: [
+    'Assess technical feasibility, security, and any data access needed.',
+    'Confirm the planned tools are acceptable and supportable.',
+    'Clear it for build, or send it back with concerns.',
+  ] },
+  { n: 4, label: 'Build & Test', owner: 'operation', sop: [
+    'Start the timer when you begin building.',
+    'Build the solution and test it thoroughly against the stated problem.',
+    'Stop the timer; when it’s ready, submit for final approval.',
+  ] },
+  { n: 5, label: 'Deploy & Go Live', owner: 'it', sop: [
+    'Once final-approved, IT prepares the deployment.',
+    'Deploy to production and verify everything works.',
+    'Mark it as live — the proposal is now delivered. 🎉',
+  ] },
 ]
 
 // actions available, keyed by status. needsComment => modal asks for a note.

@@ -22,7 +22,11 @@ create table if not exists ai_management_profiles (
 -- (otherwise `create table if not exists` above silently does nothing).
 alter table ai_management_profiles add column if not exists name       text;
 alter table ai_management_profiles add column if not exists department text default 'operation';
+alter table ai_management_profiles add column if not exists email      text;
 alter table ai_management_profiles add column if not exists created_at timestamptz default now();
+-- backfill emails for anyone who signed up before this column existed
+update ai_management_profiles p set email = u.email
+  from auth.users u where u.id = p.id and p.email is null;
 do $$
 begin
   alter table ai_management_profiles add constraint ai_management_profiles_department_check
@@ -35,8 +39,8 @@ end $$;
 create or replace function ai_management_handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
-  insert into public.ai_management_profiles (id, name, department)
-  values (new.id, coalesce(new.raw_user_meta_data->>'name', new.email), 'operation');
+  insert into public.ai_management_profiles (id, name, email, department)
+  values (new.id, coalesce(new.raw_user_meta_data->>'name', new.email), new.email, 'operation');
   return new;
 end;
 $$;
@@ -147,16 +151,15 @@ create policy "create proposals" on ai_management_proposals for insert
   with check (ai_management_my_department() in ('operation','admin') and created_by = auth.uid());
 
 -- updates: the department that owns the CURRENT status may change it.
--- Two-role model: 'operation' (Normal user) owns every non-gate stage,
--- 'management' owns the two approval gates, 'admin' can do anything.
+-- Three teams: Operation (proposal + build), Management (the two approval
+-- gates), IT (IT review + deploy/go-live). Admin can act on anything.
 drop policy if exists "update proposals by owner" on ai_management_proposals;
 create policy "update proposals by owner" on ai_management_proposals for update
   using (
     ai_management_my_department() = 'admin'
-    or (status in ('draft','needs_revision','it_review','building','needs_rework','ready_to_deploy','deploying','live')
-        and ai_management_my_department() = 'operation')
-    or (status in ('pending_approval','final_review')
-        and ai_management_my_department() = 'management')
+    or (status in ('draft','needs_revision','building','needs_rework') and ai_management_my_department() = 'operation')
+    or (status in ('pending_approval','final_review')                  and ai_management_my_department() = 'management')
+    or (status in ('it_review','ready_to_deploy','deploying','live')   and ai_management_my_department() = 'it')
   );
 
 -- comments: read all; anyone signed-in can post as themselves.

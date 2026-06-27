@@ -73,7 +73,7 @@ export default function Root() {
     } else {
       content = (
         <App mode="live" me={profile.name} role={profile.department} setRole={changeRole} api={liveApi} sb={sb}
-          onSignOut={() => sb.auth.signOut()} />
+          userId={session.user.id} onSignOut={() => sb.auth.signOut()} />
       )
     }
   } else {
