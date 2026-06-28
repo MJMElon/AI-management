@@ -17,14 +17,14 @@ export const S = {
   pending_approval: { label: 'Pending Approval',    owner: 'management', color: 'amber',   stage: 2 },
   needs_revision:   { label: 'Needs Revision',      owner: 'operation', color: 'slate',   stage: 1 },
   rejected:         { label: 'Rejected',            owner: 'management', color: 'rose',    stage: 2, terminal: true },
-  it_review:        { label: 'IT Review',           owner: 'it',         color: 'sky',     stage: 3 },
+  it_review:        { label: 'IT Review',           owner: 'operation', color: 'sky',     stage: 3 },
   building:         { label: 'Build & Test',        owner: 'operation', color: 'indigo',  stage: 4, timer: true },
   final_review:     { label: 'Final Review',        owner: 'management', color: 'amber',   stage: 4 },
   needs_rework:     { label: 'Needs Rework',        owner: 'operation', color: 'slate',   stage: 4 },
   final_rejected:   { label: 'Final Rejected',      owner: 'management', color: 'rose',    stage: 4, terminal: true },
-  ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'it',         color: 'sky',     stage: 5 },
-  deploying:        { label: 'Deploying',           owner: 'it',         color: 'sky',     stage: 5, timer: true },
-  live:             { label: 'Live',                owner: 'it',         color: 'emerald', stage: 5, terminal: true },
+  ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'operation', color: 'sky',     stage: 5 },
+  deploying:        { label: 'Deploying',           owner: 'operation', color: 'sky',     stage: 5, timer: true },
+  live:             { label: 'Live',                owner: 'operation', color: 'emerald', stage: 5, terminal: true },
 }
 
 export const STAGES = [

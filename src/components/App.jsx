@@ -94,12 +94,6 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
     finally { setAccessBusy(false) }
   }
 
-  const countByStage = useMemo(() => {
-    const c = {}
-    props_.forEach((p) => { const st = S[p.status]; if (st) c[st.stage] = (c[st.stage] || 0) + 1 })
-    return c
-  }, [props_])
-
   const homeList = useMemo(() => {
     const s = q.trim().toLowerCase()
     if (!s) return props_
@@ -119,7 +113,7 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
   } else {
     page = (
       <>
-        <Flowchart countByStage={countByStage} activeStage={null}
+        <Flowchart activeStage={null}
           onSubmit={() => setCreating(true)} onPickStage={(n) => setSopStage(n)} canCreate={canCreate} />
         <section className="panel">
           <div className="panel-h">

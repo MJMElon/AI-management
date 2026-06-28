@@ -161,15 +161,16 @@ create policy "create proposals" on ai_management_proposals for insert
   with check (ai_management_my_department() in ('operation','admin') and created_by = auth.uid());
 
 -- updates: the department that owns the CURRENT status may change it.
--- Three teams: Operation (proposal + build), Management (the two approval
--- gates), IT (IT review + deploy/go-live). Admin can act on anything.
+-- Two roles: Normal user (operation) owns every non-gate stage; Management
+-- owns the two approval gates. Admin can act on anything.
 drop policy if exists "update proposals by owner" on ai_management_proposals;
 create policy "update proposals by owner" on ai_management_proposals for update
   using (
     ai_management_my_department() = 'admin'
-    or (status in ('draft','needs_revision','building','needs_rework') and ai_management_my_department() = 'operation')
-    or (status in ('pending_approval','final_review')                  and ai_management_my_department() = 'management')
-    or (status in ('it_review','ready_to_deploy','deploying','live')   and ai_management_my_department() = 'it')
+    or (status in ('draft','needs_revision','it_review','building','needs_rework','ready_to_deploy','deploying','live')
+        and ai_management_my_department() = 'operation')
+    or (status in ('pending_approval','final_review')
+        and ai_management_my_department() = 'management')
   );
 
 -- comments: read all; anyone signed-in can post as themselves.

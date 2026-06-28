@@ -17,7 +17,7 @@ const ICONS = {
 
 // The whole process as ONE block. Clicking a step turns that step dark and
 // filters the list below; the wide button under it opens the submit form.
-export default function Flowchart({ countByStage, activeStage, onSubmit, onPickStage, canCreate }) {
+export default function Flowchart({ activeStage, onSubmit, onPickStage, canCreate }) {
   return (
     <section className="panel hero">
       <div className="hero-head">
@@ -26,16 +26,14 @@ export default function Flowchart({ countByStage, activeStage, onSubmit, onPickS
 
       <div className="flow">
         {STAGES.map((stg) => {
-          const count = countByStage[stg.n] || 0
           return (
             <button
               key={stg.n}
               className="flowstep"
               data-active={activeStage === stg.n ? '1' : '0'}
               onClick={() => onPickStage(stg.n)}
-              title={`Show proposals at: ${stg.label}`}
+              title={`What this step means: ${stg.label}`}
             >
-              {count > 0 && <span className="flowcount">{count}</span>}
               <span className="flowicon">{ICONS[stg.n]}</span>
               <span className="flowlbl">{stg.label}</span>
               <span className="flowown">{DEPTS[stg.owner].label}</span>

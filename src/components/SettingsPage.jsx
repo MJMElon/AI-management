@@ -1,18 +1,19 @@
 import React from 'react'
 
-// The four access levels a user can be assigned.
+// Assignable access levels.
 const ROLES = [
-  { key: 'operation', label: 'Operation Team' },
+  { key: 'operation', label: 'Normal User' },
   { key: 'management', label: 'Management Team' },
-  { key: 'it', label: 'IT Team' },
-  { key: 'admin', label: 'Administrator' },
 ]
+const ALL_LABELS = { operation: 'Normal User', management: 'Management Team', it: 'IT Team', admin: 'Administrator' }
 const ROLE_DESC = {
-  operation: 'Submit proposals and run Build & Test.',
+  operation: 'Submit proposals, run technical review, build & test, and deploy.',
   management: 'Approve proposals and give final approval after Build & Test.',
-  it: 'Do the IT review, then deploy & go-live.',
+  it: 'IT Team',
   admin: 'Full access to every stage and these settings.',
 }
+// options for a row, always including the user's current value
+const optionsFor = (dept) => (ROLES.find((r) => r.key === dept) ? ROLES : [...ROLES, { key: dept, label: ALL_LABELS[dept] || dept }])
 
 // Full-page settings. Today: user access. Designed to grow (more sections later).
 export default function SettingsPage({ mode, users, userId, role, busy, error, onChange, onSwitch, onBack }) {
@@ -41,7 +42,7 @@ export default function SettingsPage({ mode, users, userId, role, busy, error, o
                     </div>
                     <select className="in userrole" value={u.department || 'operation'} disabled={busy}
                       onChange={(e) => onChange(u, e.target.value)}>
-                      {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                      {optionsFor(u.department || 'operation').map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                     </select>
                   </div>
                 ))}
