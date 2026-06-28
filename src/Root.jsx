@@ -35,8 +35,17 @@ export default function Root() {
   useEffect(() => {
     if (!sb || !session) { setProfile(null); return }
     let alive = true
+    const fallback = { id: session.user.id, name: session.user.email, department: 'operation' }
     sb.from(T.profiles).select('id,name,department').eq('id', session.user.id).single()
-      .then(({ data }) => { if (alive) setProfile(data || { id: session.user.id, name: session.user.email, department: 'operation' }) })
+      .then(async ({ data }) => {
+        if (!alive) return
+        if (data) { setProfile(data); return }
+        // self-heal: no profile row yet — create one so DB-side role checks work
+        const ins = await sb.from(T.profiles)
+          .insert({ id: session.user.id, name: session.user.email, email: session.user.email, department: 'operation' })
+          .select('id,name,department').single()
+        if (alive) setProfile(ins.data || fallback)
+      })
     return () => { alive = false }
   }, [sb, session])
 

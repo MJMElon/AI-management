@@ -27,6 +27,11 @@ alter table ai_management_profiles add column if not exists created_at timestamp
 -- backfill emails for anyone who signed up before this column existed
 update ai_management_profiles p set email = u.email
   from auth.users u where u.id = p.id and p.email is null;
+-- create profile rows for users who signed up before the trigger existed
+insert into ai_management_profiles (id, name, email, department)
+select u.id, coalesce(u.raw_user_meta_data->>'name', u.email), u.email, 'operation'
+from auth.users u
+on conflict (id) do nothing;
 do $$
 begin
   alter table ai_management_profiles add constraint ai_management_profiles_department_check
@@ -76,6 +81,9 @@ create table if not exists ai_management_proposals (
 );
 
 create index if not exists ai_management_proposals_status_idx on ai_management_proposals(status);
+
+-- evaluation results captured at Build & Test (usage, users, dept, remark)
+alter table ai_management_proposals add column if not exists evaluation jsonb;
 
 -- 3. COMMENTS ------------------------------------------------
 create table if not exists ai_management_comments (
@@ -140,6 +148,8 @@ create policy "read profiles" on ai_management_profiles for select using (auth.u
 drop policy if exists "update own profile" on ai_management_profiles;
 create policy "update own profile" on ai_management_profiles for update
   using (id = auth.uid() or ai_management_my_department() = 'admin');
+drop policy if exists "insert own profile" on ai_management_profiles;
+create policy "insert own profile" on ai_management_profiles for insert with check (id = auth.uid());
 
 -- proposals: everyone signed-in can read.
 drop policy if exists "read proposals" on ai_management_proposals;

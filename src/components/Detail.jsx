@@ -129,6 +129,19 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
           : <p style={{ margin: 0, fontSize: 13.5 }}>{toolRows[0] || '—'}</p>}
       </div>
 
+      {/* evaluation results (from Build & Test) */}
+      {p.evaluation && (
+        <div className="section">
+          <h3>Evaluation results</h3>
+          <dl className="kv">
+            <dt>Usage frequency</dt><dd>{p.evaluation.frequency || '—'}</dd>
+            <dt>People using it</dt><dd>{p.evaluation.users ?? '—'}</dd>
+            <dt>Department(s)</dt><dd>{p.evaluation.department || '—'}</dd>
+            <dt>Remark</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{p.evaluation.remark || '—'}</dd>
+          </dl>
+        </div>
+      )}
+
       {/* attachments */}
       {(slides.length > 0 || otherFiles.length > 0) && (
         <div className="section">

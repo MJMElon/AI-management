@@ -7,6 +7,7 @@ import CreateForm from './CreateForm.jsx'
 import PreviewModal from './PreviewModal.jsx'
 import StageInfoModal from './StageInfoModal.jsx'
 import SettingsPage from './SettingsPage.jsx'
+import EvaluationModal from './EvaluationModal.jsx'
 import Modal from './Modal.jsx'
 
 /* ---- tiny hash router (works on static GitHub Pages) ---- */
@@ -26,6 +27,7 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
   const [preview, setPreview] = useState(null)   // attachment being previewed
   const [sopStage, setSopStage] = useState(null) // SOP popup for a stage
   const [creating, setCreating] = useState(false) // new-proposal popup
+  const [evalProp, setEvalProp] = useState(null)  // evaluation form popup
   const [accessBusy, setAccessBusy] = useState(false)
   const [users, setUsers] = useState(null)       // access list
   const [accessErr, setAccessErr] = useState(null)
@@ -66,7 +68,15 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
   const canAct = (p) => role === 'admin' || S[p.status]?.owner === role
   const canCreate = role === 'operation' || role === 'admin'
 
-  const applyAction = async (p, action, note = '') => { setProps(await api.action(p, action, note, me, role)) }
+  const applyAction = async (p, action, note = '') => {
+    // Build & Test -> Final Review goes through the evaluation form
+    if (p.status === 'building' && action.to === 'final_review') { setEvalProp(p); return }
+    setProps(await api.action(p, action, note, me, role))
+  }
+  const submitEvaluation = async (p, evalData) => {
+    const arr = await api.evaluate(p, evalData, me)
+    setProps(arr); setEvalProp(null)
+  }
   const addComment = async (p, body) => { setProps(await api.comment(p, body, me, role)) }
   const toggleTimer = async (p) => { setProps(await api.toggleTimer(p, me)) }
   const createProposal = async (data, files) => {
@@ -137,6 +147,8 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
                     </div>
                   </div>
                   <div className="pcard-side">
+                    {p.status === 'building' &&
+                      <span className="viewbtn evalbtn" onClick={(e) => { e.stopPropagation(); setEvalProp(p) }}>Submit evaluation</span>}
                     <span className="viewbtn">View</span>
                     <div className="muted" style={{ textAlign: 'right' }}><div>{p.createdBy}</div><div className="when">{fmtDate(p.createdAt)}</div></div>
                   </div>
@@ -188,6 +200,12 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
 
       {/* Stage SOP popup */}
       {sopStage && <StageInfoModal startN={sopStage} onClose={() => setSopStage(null)} />}
+
+      {/* Evaluation form popup */}
+      {evalProp && (() => {
+        const p = props_.find((x) => x.id === evalProp.id) || evalProp
+        return <EvaluationModal p={p} onClose={() => setEvalProp(null)} onSubmit={(d) => submitEvaluation(p, d)} />
+      })()}
     </>
   )
 }

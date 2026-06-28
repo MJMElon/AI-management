@@ -63,6 +63,15 @@ export function makeDemoApi() {
       return write(read().map((x) => x.id === p.id
         ? { ...x, comments: [...x.comments, { id: uid(), by: me, role, at: now(), body }] } : x))
     },
+    async evaluate(p, evalData, me) {
+      return write(read().map((x) => {
+        if (x.id !== p.id) return x
+        const d = { ...x, evaluation: evalData, status: 'final_review' }
+        if (d.running) { d.sessions = [...d.sessions, { id: uid(), start: d.running, end: now() }]; d.running = null }
+        d.history = [...d.history, { to: 'final_review', by: me, at: now(), note: 'Evaluation submitted' }]
+        return d
+      }))
+    },
     async toggleTimer(p) {
       return write(read().map((x) => {
         if (x.id !== p.id) return x
@@ -99,6 +108,7 @@ function mapProposal(row, names, dept, cBy, hBy, sBy, aBy) {
     })),
     running: open ? new Date(open.started_at).getTime() : null,
     attachments: (aBy[row.id] || []).map((a) => ({ id: a.id, name: a.name, size: a.size, path: a.path, kind: a.kind || 'file' })),
+    evaluation: row.evaluation || null,
   }
 }
 
@@ -167,6 +177,16 @@ export function makeLiveApi(sb, user) {
     async comment(p, body) {
       const { error } = await sb.from(T.comments).insert({ proposal_id: p.id, author_id: user.id, body })
       if (error) throw error
+      return load()
+    },
+    async evaluate(p, evalData) {
+      if (p.running) {
+        await sb.from(T.sessions).update({ ended_at: iso() }).eq('proposal_id', p.id).is('ended_at', null)
+      }
+      const { error } = await sb.from(T.proposals)
+        .update({ evaluation: evalData, status: 'final_review', updated_at: iso() }).eq('id', p.id)
+      if (error) throw error
+      await sb.from(T.history).insert({ proposal_id: p.id, to_status: 'final_review', actor_id: user.id, note: 'Evaluation submitted' })
       return load()
     },
     async toggleTimer(p) {
