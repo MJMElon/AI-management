@@ -3,7 +3,7 @@ import { DEPTS, S, STAGES, ACTIONS, now, fmtDate, fmtHrs, fmtClock, fmtSize } fr
 
 const lines = (s) => (s || '').split('\n').map((x) => x.trim()).filter(Boolean)
 
-export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, onComment, onPreview }) {
+export default function Detail({ p, role, me, canAct, error, onAction, onToggleTimer, onComment, onPreview }) {
   const st = S[p.status]
   const actions = ACTIONS[p.status] || []
   const problemRows = lines(p.problem)
@@ -158,6 +158,8 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
             onKeyDown={(e) => { if (e.key === 'Enter' && draftCmt.trim()) { onComment(draftCmt.trim()); setDraftCmt('') } }} />
           <button className="btn" disabled={!draftCmt.trim()} onClick={() => { onComment(draftCmt.trim()); setDraftCmt('') }}>Post</button>
         </div>
+
+        {error && <div className="auth-err" style={{ marginTop: 16 }}>{error}</div>}
 
         {/* decision buttons (only the team that owns this stage) */}
         {actions.length === 0

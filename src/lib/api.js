@@ -203,8 +203,13 @@ export function makeLiveApi(sb, user) {
       return data?.signedUrl || null
     },
     async listProfiles() {
-      const { data, error } = await sb.from(T.profiles).select('id,name,email,department').order('email', { ascending: true })
-      if (error) throw error
+      let { data, error } = await sb.from(T.profiles).select('id,name,email,department').order('email', { ascending: true })
+      if (error) {
+        // email column not added yet — fall back to name (which is the email for trigger-created users)
+        const r = await sb.from(T.profiles).select('id,name,department').order('name', { ascending: true })
+        if (r.error) throw r.error
+        data = (r.data || []).map((x) => ({ ...x, email: x.name }))
+      }
       return data || []
     },
     async setProfileRole(id, dept) {

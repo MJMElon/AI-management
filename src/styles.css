@@ -201,7 +201,7 @@ textarea.in{min-height:80px;resize:vertical}
 .auth-card{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.8));
   border:1px solid var(--glass-border);border-radius:18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   box-shadow:0 22px 60px rgba(15,23,42,.14);max-width:400px;width:100%;padding:26px}
-.auth-card .brandrow{display:flex;align-items:baseline;gap:9px;margin-bottom:16px}
+.auth-card .brandrow{display:flex;align-items:baseline;justify-content:center;gap:9px;margin-bottom:16px}
 .auth-card .mark{font-family:"Sora";font-weight:700;font-size:18px;color:var(--forest)}
 .auth-card .tag{font-size:12px;color:var(--ink-2)}
 .auth-card h1{font-size:21px;margin:0 0 4px}

@@ -28,6 +28,7 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
   const [sopStage, setSopStage] = useState(null) // SOP popup for a stage
   const [creating, setCreating] = useState(false) // new-proposal popup
   const [evalProp, setEvalProp] = useState(null)  // evaluation form popup
+  const [opErr, setOpErr] = useState(null)        // action/decision error
   const [accessBusy, setAccessBusy] = useState(false)
   const [users, setUsers] = useState(null)       // access list
   const [accessErr, setAccessErr] = useState(null)
@@ -71,13 +72,17 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
   const applyAction = async (p, action, note = '') => {
     // Build & Test -> Final Review goes through the evaluation form
     if (p.status === 'building' && action.to === 'final_review') { setEvalProp(p); return }
-    setProps(await api.action(p, action, note, me, role))
+    try { setOpErr(null); setProps(await api.action(p, action, note, me, role)) }
+    catch (e) { setOpErr(e.message || String(e)) }
   }
   const submitEvaluation = async (p, evalData) => {
     const arr = await api.evaluate(p, evalData, me)
     setProps(arr); setEvalProp(null)
   }
-  const addComment = async (p, body) => { setProps(await api.comment(p, body, me, role)) }
+  const addComment = async (p, body) => {
+    try { setOpErr(null); setProps(await api.comment(p, body, me, role)) }
+    catch (e) { setOpErr(e.message || String(e)) }
+  }
   const toggleTimer = async (p) => { setProps(await api.toggleTimer(p, me)) }
   const createProposal = async (data, files) => {
     const arr = await api.create(data, me, files)
@@ -177,8 +182,8 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
 
       {/* Proposal view popup */}
       {sel && (
-        <Modal wide onClose={() => setSelId(null)}>
-          <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
+        <Modal wide onClose={() => { setSelId(null); setOpErr(null) }}>
+          <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)} error={opErr}
             onAction={(p, a, note) => applyAction(p, a, note)} onToggleTimer={() => toggleTimer(sel)}
             onComment={(b) => addComment(sel, b)} onPreview={setPreview} />
         </Modal>

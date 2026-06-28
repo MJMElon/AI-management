@@ -120,7 +120,6 @@ export default function CreateForm({ onCancel, onCreate, canUpload = true }) {
           <button className="btn btn-primary" disabled={!valid || busy} onClick={submit}>{busy ? 'Submitting…' : 'Submit proposal'}</button>
           <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
         </div>
-        {!valid && <p className="hint" style={{ textAlign: 'center' }}>Project title, at least one problem point, and the value calculation are required.</p>}
       </div>
     </div>
   )
