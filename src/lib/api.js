@@ -104,16 +104,19 @@ function mapProposal(row, names, dept, cBy, hBy, sBy, aBy) {
 
 export function makeLiveApi(sb, user) {
   async function load() {
-    const [pr, pp, cm, hi, ss, at] = await Promise.all([
+    // Core tables must exist; attachments is optional so the app still works
+    // before the attachments/storage SQL has been run.
+    const [pr, pp, cm, hi, ss] = await Promise.all([
       sb.from(T.profiles).select('id,name,department'),
       sb.from(T.proposals).select('*').order('created_at', { ascending: false }),
       sb.from(T.comments).select('*').order('created_at', { ascending: true }),
       sb.from(T.history).select('*').order('created_at', { ascending: true }),
       sb.from(T.sessions).select('*').order('started_at', { ascending: true }),
-      sb.from(T.attachments).select('*').order('created_at', { ascending: true }),
     ])
-    const firstErr = [pr, pp, cm, hi, ss, at].map((r) => r.error).find(Boolean)
+    const firstErr = [pr, pp, cm, hi, ss].map((r) => r.error).find(Boolean)
     if (firstErr) throw firstErr
+    let at = { data: [] }
+    try { const r = await sb.from(T.attachments).select('*').order('created_at', { ascending: true }); if (!r.error) at = r } catch (e) { /* table not created yet */ }
     const names = {}, dept = {}
     ;(pr.data || []).forEach((p) => { names[p.id] = p.name; dept[p.id] = p.department })
     const group = (rows, k) => { const m = {}; (rows || []).forEach((r) => { (m[r[k]] = m[r[k]] || []).push(r) }); return m }
@@ -147,7 +150,8 @@ export function makeLiveApi(sb, user) {
       }).select('id').single()
       if (error) throw error
       await sb.from(T.history).insert({ proposal_id: rows.id, to_status: 'draft', actor_id: user.id })
-      if (files && files.length) await uploadFiles(rows.id, files)
+      // uploads shouldn't block the proposal from being created
+      if (files && files.length) { try { await uploadFiles(rows.id, files) } catch (e) { console.error('Attachment upload failed:', e) } }
       return load()
     },
     async action(p, action, note) {

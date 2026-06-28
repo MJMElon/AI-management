@@ -4,19 +4,15 @@ import { T } from '../lib/tables.js'
 import Flowchart from './Flowchart.jsx'
 import Detail from './Detail.jsx'
 import CreateForm from './CreateForm.jsx'
-import CommentModal from './CommentModal.jsx'
 import PreviewModal from './PreviewModal.jsx'
-import AccessModal from './AccessModal.jsx'
 import StageInfoModal from './StageInfoModal.jsx'
+import SettingsPage from './SettingsPage.jsx'
 import Modal from './Modal.jsx'
 
 /* ---- tiny hash router (works on static GitHub Pages) ---- */
 function parseHash() {
   const h = (window.location.hash || '').replace(/^#/, '')
-  const parts = h.split('/').filter(Boolean)
-  if (parts[0] === 'submit') return { name: 'submit' }
-  if (parts[0] === 'p' && parts[1]) return { name: 'detail', id: parts[1] }
-  if (parts[0] === 'stage' && parts[1]) return { name: 'stage', n: Number(parts[1]) }
+  if (h.split('/').filter(Boolean)[0] === 'settings') return { name: 'settings' }
   return { name: 'home' }
 }
 const go = (path) => { window.location.hash = path }
@@ -25,14 +21,13 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
   const [props_, setProps] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
-  const [modal, setModal] = useState(null) // comment modal {action, propId}
   const [q, setQ] = useState('')
-  const [preview, setPreview] = useState(null) // attachment being previewed
+  const [selId, setSelId] = useState(null)       // proposal view popup
+  const [preview, setPreview] = useState(null)   // attachment being previewed
   const [sopStage, setSopStage] = useState(null) // SOP popup for a stage
   const [creating, setCreating] = useState(false) // new-proposal popup
-  const [access, setAccess] = useState(false)   // user-access settings modal
   const [accessBusy, setAccessBusy] = useState(false)
-  const [users, setUsers] = useState(null)      // access list
+  const [users, setUsers] = useState(null)       // access list
   const [accessErr, setAccessErr] = useState(null)
   const [route, setRoute] = useState(parseHash)
 
@@ -58,31 +53,26 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
     return () => { sb.removeChannel(ch) }
   }, [mode, sb, reload])
 
+  // load the user list when entering Settings (live)
+  useEffect(() => {
+    if (route.name !== 'settings' || mode !== 'live') return
+    let alive = true
+    setUsers(null); setAccessErr(null)
+    api.listProfiles().then((u) => { if (alive) setUsers(u) })
+      .catch((e) => { if (alive) { setAccessErr(e.message || String(e)); setUsers([]) } })
+    return () => { alive = false }
+  }, [route.name, mode, api])
+
   const canAct = (p) => role === 'admin' || S[p.status]?.owner === role
   const canCreate = role === 'operation' || role === 'admin'
 
   const applyAction = async (p, action, note = '') => { setProps(await api.action(p, action, note, me, role)) }
-  const onAction = (p, action) => {
-    if (action.needsComment) { setModal({ action, propId: p.id }); return }
-    applyAction(p, action)
-  }
   const addComment = async (p, body) => { setProps(await api.comment(p, body, me, role)) }
   const toggleTimer = async (p) => { setProps(await api.toggleTimer(p, me)) }
   const createProposal = async (data, files) => {
     const arr = await api.create(data, me, files)
-    setProps(arr)
-    setCreating(false)
-    if (arr[0]) go(`/p/${arr[0].id}`)
-  }
-
-  // user-access settings
-  const openAccess = async () => {
-    setAccess(true); setAccessErr(null)
-    if (mode === 'live') {
-      setUsers(null)
-      try { setUsers(await api.listProfiles()) }
-      catch (e) { setAccessErr(e.message || String(e)); setUsers([]) }
-    }
+    setProps(arr); setCreating(false)
+    if (arr[0]) setSelId(arr[0].id)
   }
   const changeUserRole = async (u, dept) => {
     setAccessBusy(true); setAccessErr(null)
@@ -100,73 +90,27 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
     return c
   }, [props_])
 
-  const filterList = (arr) => {
+  const homeList = useMemo(() => {
     const s = q.trim().toLowerCase()
-    if (!s) return arr
-    return arr.filter((p) => (p.title + ' ' + p.problem + ' ' + p.cat + ' ' + p.createdBy).toLowerCase().includes(s))
-  }
+    if (!s) return props_
+    return props_.filter((p) => (p.title + ' ' + p.problem + ' ' + p.cat + ' ' + p.createdBy).toLowerCase().includes(s))
+  }, [props_, q])
 
-  const homeList = useMemo(() => filterList(props_), [props_, q])
-
-  /* ---------- shared bits ---------- */
-  const ListRows = ({ items }) => (
-    <div className="plist wide">
-      {loading && <div className="empty">Loading…</div>}
-      {!loading && items.length === 0 &&
-        <div className="empty"><div className="big">{props_.length === 0 ? 'No proposals yet' : 'Nothing here'}</div>
-          {props_.length === 0 ? 'Submit the first idea to get started.' : 'Try a different search or filter.'}</div>}
-      {!loading && items.map((p) => {
-        const st = S[p.status]
-        const nAtt = p.attachments ? p.attachments.length : 0
-        return (
-          <button key={p.id} className="pcard" onClick={() => go(`/p/${p.id}`)}>
-            <div className="pcard-main">
-              <p className="t">{p.title}</p>
-              <div className="meta">
-                <span className={'badge b-' + st.color}><span className="dot"></span>{st.label}</span>
-                {nAtt > 0 && <><span>·</span><span>📎 {nAtt}</span></>}
-              </div>
-            </div>
-            <div className="pcard-side muted">
-              <div>{p.createdBy}</div>
-              <div className="when">{fmtDate(p.createdAt)}</div>
-            </div>
-          </button>
-        )
-      })}
-    </div>
-  )
-
-  const flowchart = (
-    <Flowchart
-      countByStage={countByStage}
-      activeStage={null}
-      onSubmit={() => setCreating(true)}
-      onPickStage={(n) => setSopStage(n)}
-      canCreate={canCreate}
-    />
-  )
+  const sel = selId ? props_.find((p) => p.id === selId) || null : null
 
   /* ---------- pages ---------- */
   let page
-  if (route.name === 'detail') {
-    const sel = props_.find((p) => p.id === route.id) || null
+  if (route.name === 'settings') {
     page = (
-      <section className="panel page">
-        <button className="backlink" onClick={() => go('/')}>← Back to process</button>
-        {sel
-          ? <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
-              onAction={onAction} onToggleTimer={() => toggleTimer(sel)} onComment={(b) => addComment(sel, b)}
-              onPreview={setPreview} />
-          : <div className="empty"><div className="big">{loading ? 'Loading…' : 'Proposal not found'}</div>
-              {!loading && 'It may have been removed.'}</div>}
-      </section>
+      <SettingsPage mode={mode} users={users} userId={userId} role={role} busy={accessBusy} error={accessErr}
+        onBack={() => go('/')} onChange={changeUserRole}
+        onSwitch={(r) => setRole(r)} />
     )
   } else {
-    // home
     page = (
       <>
-        {flowchart}
+        <Flowchart countByStage={countByStage} activeStage={null}
+          onSubmit={() => setCreating(true)} onPickStage={(n) => setSopStage(n)} canCreate={canCreate} />
         <section className="panel">
           <div className="panel-h">
             <h2>Submitted proposals</h2>
@@ -175,7 +119,31 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
           <div className="filterbar">
             <input className="in" placeholder="Search proposals…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search proposals" />
           </div>
-          <ListRows items={homeList} />
+          <div className="plist wide">
+            {loading && <div className="empty">Loading…</div>}
+            {!loading && homeList.length === 0 &&
+              <div className="empty"><div className="big">{props_.length === 0 ? 'No proposals yet' : 'Nothing here'}</div>
+                {props_.length === 0 ? 'Submit the first idea to get started.' : 'Try a different search.'}</div>}
+            {!loading && homeList.map((p) => {
+              const st = S[p.status]
+              const nAtt = p.attachments ? p.attachments.length : 0
+              return (
+                <button key={p.id} className="pcard" onClick={() => setSelId(p.id)}>
+                  <div className="pcard-main">
+                    <p className="t">{p.title}</p>
+                    <div className="meta">
+                      <span className={'badge b-' + st.color}><span className="dot"></span>{st.label}</span>
+                      {nAtt > 0 && <><span>·</span><span>📎 {nAtt}</span></>}
+                    </div>
+                  </div>
+                  <div className="pcard-side">
+                    <span className="viewbtn">View</span>
+                    <div className="muted" style={{ textAlign: 'right' }}><div>{p.createdBy}</div><div className="when">{fmtDate(p.createdAt)}</div></div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </section>
       </>
     )
@@ -188,7 +156,7 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
           <span className="mark">Vibe Coding Project Management</span>
         </button>
         <div className="spacer"></div>
-        <button className="iconbtn iconbtn-only" onClick={openAccess} title="User access" aria-label="User access">⚙</button>
+        <button className="iconbtn iconbtn-only" onClick={() => go('/settings')} title="Settings" aria-label="Settings">⚙</button>
         {mode === 'live' && <button className="iconbtn" onClick={onSignOut}>Sign out</button>}
       </header>
 
@@ -197,14 +165,14 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
         {page}
       </div>
 
-      {/* Required-note popup (rejections / send-backs) */}
-      {modal && (() => {
-        const p = props_.find((x) => x.id === modal.propId)
-        if (!p) return null
-        return <CommentModal action={modal.action}
-          onClose={() => setModal(null)}
-          onSubmit={(note) => { applyAction(p, modal.action, note); setModal(null) }} />
-      })()}
+      {/* Proposal view popup */}
+      {sel && (
+        <Modal wide onClose={() => setSelId(null)}>
+          <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
+            onAction={(p, a, note) => applyAction(p, a, note)} onToggleTimer={() => toggleTimer(sel)}
+            onComment={(b) => addComment(sel, b)} onPreview={setPreview} />
+        </Modal>
+      )}
 
       {/* Attachment preview popup */}
       {preview && <PreviewModal att={preview} getUrl={api.fileUrl} onClose={() => setPreview(null)} />}
@@ -220,13 +188,6 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
 
       {/* Stage SOP popup */}
       {sopStage && <StageInfoModal startN={sopStage} onClose={() => setSopStage(null)} />}
-
-      {/* User access settings */}
-      {access && (
-        <AccessModal mode={mode} users={users} userId={userId} role={role} busy={accessBusy} error={accessErr}
-          onClose={() => setAccess(false)} onChange={changeUserRole}
-          onSwitch={async (r) => { setAccessBusy(true); try { await setRole(r) } finally { setAccessBusy(false); setAccess(false) } }} />
-      )}
     </>
   )
 }

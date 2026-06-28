@@ -22,6 +22,7 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
   const loggedSecs = p.sessions.reduce((a, s) => a + (s.end - s.start) / 1000, 0) + (p.running ? (now() - p.running) / 1000 : 0)
 
   const [draftCmt, setDraftCmt] = useState('')
+  const [note, setNote] = useState('')
 
   return (
     <div>
@@ -62,18 +63,24 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
           ? <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>{p.status === 'live' ? 'Shipped. Nothing left to do. 🎉' : 'This proposal is closed.'}</p>
           : canAct
             ? (
-              <div className="actions">
-                {actions.map((a, i) => (
-                  <button key={i} className={'btn btn-' + a.kind} onClick={() => onAction(p, a)}>{a.label}</button>
-                ))}
-              </div>
+              <>
+                <label className="f">Remark / evaluation note <span className="muted">(required to reject or send back)</span></label>
+                <textarea className="in" style={{ minHeight: 70, marginBottom: 12 }} value={note}
+                  onChange={(e) => setNote(e.target.value)} placeholder="Write your remark for this decision…" />
+                <div className="actions">
+                  {actions.map((a, i) => (
+                    <button key={i} className={'btn btn-' + a.kind} disabled={a.needsComment && !note.trim()}
+                      onClick={() => { onAction(p, a, note.trim()); setNote('') }}>{a.label}</button>
+                  ))}
+                </div>
+                <p className="hint">You're acting as {DEPTS[role].label}.</p>
+              </>
             )
             : (
               <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>
                 Waiting on <b>{DEPTS[st.owner].label}</b>.
               </p>
             )}
-        {canAct && actions.length > 0 && <p className="hint">You're acting as {DEPTS[role].label}. Rejecting or sending back asks for a comment.</p>}
       </div>
 
       {/* timer (only on build/deploy) */}

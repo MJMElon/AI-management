@@ -309,8 +309,12 @@ textarea.in{min-height:80px;resize:vertical}
 /* list rows on landing */
 .plist.wide .pcard{display:flex;align-items:center;justify-content:space-between;gap:14px}
 .pcard-main{min-width:0}
-.pcard-side{text-align:right;font-size:12px;white-space:nowrap}
+.pcard-side{display:flex;align-items:center;gap:14px;font-size:12px;white-space:nowrap}
 .pcard-side .when{margin-top:2px}
+.viewbtn{flex:0 0 auto;font-size:12px;font-weight:700;color:var(--ink);border:1px solid var(--glass-border);
+  background:linear-gradient(180deg,#fff,var(--silver-2));border-radius:9px;padding:7px 14px;
+  box-shadow:0 1px 2px rgba(15,23,42,.06),inset 0 1px 0 rgba(255,255,255,.9)}
+.pcard:hover .viewbtn{background:linear-gradient(180deg,#fff,var(--silver-3))}
 
 /* attachments / dropzone */
 .dropzone{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #c4d1c9;

@@ -64,13 +64,14 @@ export default function CreateForm({ onCancel, onCreate, canUpload = true }) {
   const [slides, setSlides] = useState([])
   const [others, setOthers] = useState([])
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
   const cleanProblems = problems.map((s) => s.trim()).filter(Boolean)
   const cleanTools = tools.map((s) => s.trim()).filter(Boolean)
   const valid = title.trim() && cleanProblems.length > 0 && value.trim()
 
   const submit = async () => {
-    setBusy(true)
+    setBusy(true); setError('')
     try {
       const files = canUpload
         ? [...slides.map((f) => ({ file: f, kind: 'slide' })), ...others.map((f) => ({ file: f, kind: 'file' }))]
@@ -81,7 +82,8 @@ export default function CreateForm({ onCancel, onCreate, canUpload = true }) {
         benefit: value.trim(),
         tools: cleanTools.join('\n'),
       }, files)
-    } finally { setBusy(false) }
+    } catch (e) { setError(e.message || String(e)) }
+    finally { setBusy(false) }
   }
 
   return (
@@ -113,11 +115,12 @@ export default function CreateForm({ onCancel, onCreate, canUpload = true }) {
           )}
         </div>
 
-        <div className="actions" style={{ marginTop: 18 }}>
+        {error && <div className="auth-err" style={{ marginTop: 16 }}>{error}</div>}
+        <div className="actions" style={{ marginTop: 18, justifyContent: 'center' }}>
           <button className="btn btn-primary" disabled={!valid || busy} onClick={submit}>{busy ? 'Submitting…' : 'Submit proposal'}</button>
           <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
         </div>
-        {!valid && <p className="hint">Project title, at least one problem point, and the value calculation are required.</p>}
+        {!valid && <p className="hint" style={{ textAlign: 'center' }}>Project title, at least one problem point, and the value calculation are required.</p>}
       </div>
     </div>
   )
