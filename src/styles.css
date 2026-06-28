@@ -267,6 +267,10 @@ textarea.in{min-height:80px;resize:vertical}
 /* new-proposal form title */
 .form-title{margin:0;font-family:"Poppins",sans-serif;font-size:28px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
 
+/* decision / approval section at the bottom of a proposal view */
+.section.decision{background:linear-gradient(180deg,#f7f9fc,#eef2f7);border-top:2px solid #dbe1ea;
+  border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius)}
+
 /* user-access list */
 .userlist{display:flex;flex-direction:column;gap:8px;margin-top:6px;max-height:54vh;overflow-y:auto}
 .userrow{display:flex;align-items:center;justify-content:space-between;gap:12px;

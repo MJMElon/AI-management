@@ -41,8 +41,8 @@ export function makeDemoApi() {
     async load() { return read() },
     async create(data, me, files = []) {
       const p = {
-        id: uid(), ...data, est: data.est || 0, status: 'draft', createdBy: me, createdAt: now(),
-        comments: [], history: [{ to: 'draft', by: me, at: now(), note: '' }], sessions: [], running: null,
+        id: uid(), ...data, est: data.est || 0, status: 'pending_approval', createdBy: me, createdAt: now(),
+        comments: [], history: [{ to: 'pending_approval', by: me, at: now(), note: '' }], sessions: [], running: null,
         // demo can't really store files — keep name/size/kind so the UI is honest
         attachments: (files || []).map((x) => ({ id: uid(), name: x.file.name, size: x.file.size, kind: x.kind || 'file', path: null })),
       }
@@ -156,10 +156,10 @@ export function makeLiveApi(sb, user) {
       // est_hours / priority / category are left to their column defaults.
       const { data: rows, error } = await sb.from(T.proposals).insert({
         title: data.title, problem: data.problem, benefit: data.benefit,
-        tools: data.tools || null, created_by: user.id, status: 'draft',
+        tools: data.tools || null, created_by: user.id, status: 'pending_approval',
       }).select('id').single()
       if (error) throw error
-      await sb.from(T.history).insert({ proposal_id: rows.id, to_status: 'draft', actor_id: user.id })
+      await sb.from(T.history).insert({ proposal_id: rows.id, to_status: 'pending_approval', actor_id: user.id })
       // uploads shouldn't block the proposal from being created
       if (files && files.length) { try { await uploadFiles(rows.id, files) } catch (e) { console.error('Attachment upload failed:', e) } }
       return load()

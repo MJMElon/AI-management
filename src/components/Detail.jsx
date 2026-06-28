@@ -56,33 +56,6 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
       {st.terminal && p.status !== 'live' &&
         <div className="banner" style={{ marginTop: 6 }}>This proposal was {st.label.toLowerCase()} and is closed.</div>}
 
-      {/* actions */}
-      <div className="section">
-        <h3>What happens next</h3>
-        {actions.length === 0
-          ? <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>{p.status === 'live' ? 'Shipped. Nothing left to do. 🎉' : 'This proposal is closed.'}</p>
-          : canAct
-            ? (
-              <>
-                <label className="f">Remark / evaluation note <span className="muted">(required to reject or send back)</span></label>
-                <textarea className="in" style={{ minHeight: 70, marginBottom: 12 }} value={note}
-                  onChange={(e) => setNote(e.target.value)} placeholder="Write your remark for this decision…" />
-                <div className="actions">
-                  {actions.map((a, i) => (
-                    <button key={i} className={'btn btn-' + a.kind} disabled={a.needsComment && !note.trim()}
-                      onClick={() => { onAction(p, a, note.trim()); setNote('') }}>{a.label}</button>
-                  ))}
-                </div>
-                <p className="hint">You're acting as {DEPTS[role].label}.</p>
-              </>
-            )
-            : (
-              <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>
-                Waiting on <b>{DEPTS[st.owner].label}</b>.
-              </p>
-            )}
-      </div>
-
       {/* timer (only on build/deploy) */}
       {st.timer && (
         <div className="section">
@@ -151,9 +124,25 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
         </div>
       )}
 
-      {/* comments */}
+      {/* history */}
       <div className="section">
-        <h3>Discussion</h3>
+        <h3>History</h3>
+        <ul className="hist">
+          {[...p.history].reverse().map((h, i) => (
+            <li key={i}>
+              <span className="tick"></span>
+              <span>moved to <b>{S[h.to]?.label || h.to}</b> by {h.by} <span className="when">· {fmtDate(h.at)}</span>
+                {h.note && <div className="muted" style={{ marginTop: 2 }}>“{h.note}”</div>}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ===== decision + discussion (bottom) ===== */}
+      <div className="section decision">
+        <h3>{canAct && actions.length > 0 ? `${DEPTS[role]?.label} decision` : 'Comments'}</h3>
+
+        {/* discussion thread + comment box */}
         <div className="thread">
           {p.comments.length === 0 && <p className="muted" style={{ fontSize: 13, margin: 0 }}>No comments yet.</p>}
           {p.comments.map((c) => (
@@ -169,20 +158,25 @@ export default function Detail({ p, role, me, canAct, onAction, onToggleTimer, o
             onKeyDown={(e) => { if (e.key === 'Enter' && draftCmt.trim()) { onComment(draftCmt.trim()); setDraftCmt('') } }} />
           <button className="btn" disabled={!draftCmt.trim()} onClick={() => { onComment(draftCmt.trim()); setDraftCmt('') }}>Post</button>
         </div>
-      </div>
 
-      {/* history */}
-      <div className="section">
-        <h3>History</h3>
-        <ul className="hist">
-          {[...p.history].reverse().map((h, i) => (
-            <li key={i}>
-              <span className="tick"></span>
-              <span>moved to <b>{S[h.to]?.label || h.to}</b> by {h.by} <span className="when">· {fmtDate(h.at)}</span>
-                {h.note && <div className="muted" style={{ marginTop: 2 }}>“{h.note}”</div>}</span>
-            </li>
-          ))}
-        </ul>
+        {/* decision buttons (only the team that owns this stage) */}
+        {actions.length === 0
+          ? <p className="muted" style={{ fontSize: 13.5, margin: '16px 0 0' }}>{p.status === 'live' ? 'Shipped. Nothing left to do. 🎉' : 'This proposal is closed.'}</p>
+          : canAct
+            ? (
+              <div style={{ marginTop: 18 }}>
+                <label className="f">Comment / remark <span className="muted">(required to reject or send back)</span></label>
+                <textarea className="in" style={{ minHeight: 70, marginBottom: 12 }} value={note}
+                  onChange={(e) => setNote(e.target.value)} placeholder="Write your remark for this decision…" />
+                <div className="actions">
+                  {actions.map((a, i) => (
+                    <button key={i} className={'btn btn-' + a.kind} disabled={a.needsComment && !note.trim()}
+                      onClick={() => { onAction(p, a, note.trim()); setNote('') }}>{a.label}</button>
+                  ))}
+                </div>
+              </div>
+            )
+            : <p className="muted" style={{ fontSize: 13.5, margin: '16px 0 0' }}>Waiting on <b>{DEPTS[st.owner].label}</b>.</p>}
       </div>
     </div>
   )

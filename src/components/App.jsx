@@ -150,7 +150,11 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
                     {p.status === 'building' &&
                       <span className="viewbtn evalbtn" onClick={(e) => { e.stopPropagation(); setEvalProp(p) }}>Submit evaluation</span>}
                     <span className="viewbtn">View</span>
-                    <div className="muted" style={{ textAlign: 'right' }}><div>{p.createdBy}</div><div className="when">{fmtDate(p.createdAt)}</div></div>
+                    <div className="muted" style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11 }}>submitted by</div>
+                      <div>{p.createdBy}</div>
+                      <div className="when">{fmtDate(p.createdAt)}</div>
+                    </div>
                   </div>
                 </button>
               )
