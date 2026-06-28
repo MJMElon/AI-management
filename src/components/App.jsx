@@ -23,6 +23,7 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState(null)
   const [q, setQ] = useState('')
+  const [tab, setTab] = useState('submitted')    // home tab: submitted | rejected
   const [selId, setSelId] = useState(null)       // proposal view popup
   const [preview, setPreview] = useState(null)   // attachment being previewed
   const [sopStage, setSopStage] = useState(null) // SOP popup for a stage
@@ -99,11 +100,16 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
     finally { setAccessBusy(false) }
   }
 
+  const canSeeRejected = role === 'management' || role === 'admin'
+  const effectiveTab = (tab === 'rejected' && canSeeRejected) ? 'rejected' : 'submitted'
+  const REJECTED = ['rejected', 'final_rejected', 'cancelled']
   const homeList = useMemo(() => {
+    const isRej = (p) => REJECTED.includes(p.status)
+    let arr = props_.filter(effectiveTab === 'rejected' ? isRej : (p) => !isRej(p))
     const s = q.trim().toLowerCase()
-    if (!s) return props_
-    return props_.filter((p) => (p.title + ' ' + p.problem + ' ' + p.cat + ' ' + p.createdBy).toLowerCase().includes(s))
-  }, [props_, q])
+    if (s) arr = arr.filter((p) => (p.title + ' ' + p.problem + ' ' + p.cat + ' ' + p.createdBy).toLowerCase().includes(s))
+    return arr
+  }, [props_, q, effectiveTab])
 
   const sel = selId ? props_.find((p) => p.id === selId) || null : null
 
@@ -122,7 +128,10 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
           onSubmit={() => setCreating(true)} onPickStage={(n) => setSopStage(n)} canCreate={canCreate} />
         <section className="panel">
           <div className="panel-h">
-            <h2>Submitted proposals</h2>
+            <div className="chips">
+              <button className="chip" data-on={effectiveTab === 'submitted' ? '1' : '0'} onClick={() => setTab('submitted')}>Submitted proposals</button>
+              {canSeeRejected && <button className="chip" data-on={effectiveTab === 'rejected' ? '1' : '0'} onClick={() => setTab('rejected')}>Rejected</button>}
+            </div>
             <span className="pill">{homeList.length} total</span>
           </div>
           <div className="filterbar">
@@ -168,7 +177,8 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
     <>
       <header className="topbar">
         <button className="brand brandbtn" onClick={() => go('/')}>
-          <span className="mark">Vibe Coding Project Management</span>
+          <span className="mark">MJM Group</span>
+          <span className="tag">Vibe Coding Project Management</span>
         </button>
         <div className="spacer"></div>
         <button className="iconbtn iconbtn-only" onClick={() => go('/settings')} title="Settings" aria-label="Settings">⚙</button>

@@ -171,6 +171,9 @@ create policy "create proposals" on ai_management_proposals for insert
 -- updates: the department that owns the CURRENT status may change it.
 -- Two roles: Normal user (operation) owns every non-gate stage; Management
 -- owns the two approval gates. Admin can act on anything.
+-- USING gates WHO may act based on the CURRENT status; WITH CHECK (true) lets
+-- the row move to the next status (otherwise the post-update row would fail the
+-- USING test and Postgres reports "new row violates row-level security policy").
 drop policy if exists "update proposals by owner" on ai_management_proposals;
 create policy "update proposals by owner" on ai_management_proposals for update
   using (
@@ -181,7 +184,8 @@ create policy "update proposals by owner" on ai_management_proposals for update
         and ai_management_my_department() = 'management')
     -- the submitter can cancel/withdraw their own pending proposal
     or (status = 'pending_approval' and created_by = auth.uid())
-  );
+  )
+  with check (true);
 
 -- comments: read all; anyone signed-in can post as themselves.
 drop policy if exists "read comments" on ai_management_comments;
