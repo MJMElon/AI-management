@@ -1,15 +1,14 @@
 import React, { useState } from 'react'
 import { fmtSize } from '../lib/model.js'
 
-/* a list of text rows with add / remove — used for Problem and Planned tools */
-function RowEditor({ label, hint, rows, setRows, placeholder, addLabel, multiline }) {
+/* a list of text rows with add / remove */
+function RowEditor({ label, rows, setRows, placeholder, multiline }) {
   const update = (i, v) => setRows((r) => r.map((x, idx) => (idx === i ? v : x)))
   const add = () => setRows((r) => [...r, ''])
   const remove = (i) => setRows((r) => (r.length === 1 ? [''] : r.filter((_, idx) => idx !== i)))
   return (
     <div className="full">
       <label className="f">{label}</label>
-      {hint && <p className="fieldhint">{hint}</p>}
       {rows.map((val, i) => (
         <div className="rowedit" key={i}>
           {rows.length > 1 && <span className="rowbullet">•</span>}
@@ -19,13 +18,13 @@ function RowEditor({ label, hint, rows, setRows, placeholder, addLabel, multilin
           {rows.length > 1 && <button type="button" className="filex" onClick={() => remove(i)} aria-label="Remove row">×</button>}
         </div>
       ))}
-      <button type="button" className="btn btn-ghost addrow" onClick={add}>+ Add {addLabel}</button>
+      <button type="button" className="btn btn-ghost addrow" onClick={add}>+ Add row</button>
     </div>
   )
 }
 
 /* a file picker with a dropzone + selected list */
-function FileZone({ label, hint, accept, files, setFiles }) {
+function FileZone({ label, accept, files, setFiles }) {
   const addFiles = (list) => {
     const incoming = Array.from(list)
     setFiles((prev) => {
@@ -37,7 +36,6 @@ function FileZone({ label, hint, accept, files, setFiles }) {
   return (
     <div className="full">
       <label className="f">{label} <span className="muted">(optional)</span></label>
-      {hint && <p className="fieldhint">{hint}</p>}
       <label className="dropzone">
         <input type="file" multiple accept={accept} style={{ display: 'none' }}
           onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
@@ -88,45 +86,29 @@ export default function CreateForm({ onCancel, onCreate, canUpload = true }) {
 
   return (
     <div>
-      <div className="detail-top" style={{ paddingTop: 4 }}>
-        <div className="eyebrow">New proposal</div>
-        <h1>Submit a vibe-coding idea</h1>
-        <p className="detail-sub">Describe the project, the problem, and the value it creates.</p>
+      <div className="detail-top" style={{ paddingTop: 2 }}>
+        <h1 className="form-title">New proposal</h1>
       </div>
       <div className="section" style={{ borderTop: 0, paddingTop: 4 }}>
         <div className="form">
           <div className="full">
             <label className="f">Project title</label>
-            <p className="fieldhint">Keep it specific but summarized — e.g. “Auto-fill daily shift report”, not “a tool”.</p>
             <input className="in" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Specific, short project title" />
           </div>
 
-          <RowEditor
-            label="Problem it solves"
-            hint="One point per row. A single row reads as a paragraph; add rows to make it point form."
-            rows={problems} setRows={setProblems} addLabel="point" multiline
-            placeholder="What's painful today?"
-          />
+          <RowEditor label="Problem it solves" rows={problems} setRows={setProblems} multiline placeholder="What's painful today?" />
 
           <div className="full">
             <label className="f">Value created calculation</label>
-            <p className="fieldhint">Quantify the win — e.g. “40 min/day × 6 supervisors × 22 days ≈ 88 hrs/month saved”.</p>
             <textarea className="in" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Time saved, cost avoided, errors removed — with the maths." />
           </div>
 
-          <RowEditor
-            label="Planned tools"
-            hint="Add a row per tool or technology."
-            rows={tools} setRows={setTools} addLabel="tool"
-            placeholder="e.g. React, Google Sheets API"
-          />
+          <RowEditor label="Planned tools" rows={tools} setRows={setTools} placeholder="e.g. React, Google Sheets API" />
 
           {canUpload && (
             <>
-              <FileZone label="Presentation slides" accept=".ppt,.pptx,.pdf,.key,.odp"
-                hint="Pitch deck or slides (PPT, PDF…)." files={slides} setFiles={setSlides} />
-              <FileZone label="Other attachments"
-                hint="Mockups, screenshots, specs, any supporting files." files={others} setFiles={setOthers} />
+              <FileZone label="Presentation slides" accept=".ppt,.pptx,.pdf,.key,.odp" files={slides} setFiles={setSlides} />
+              <FileZone label="Other attachments" files={others} setFiles={setOthers} />
             </>
           )}
         </div>

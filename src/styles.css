@@ -174,7 +174,7 @@ a{color:inherit}
 /* form */
 .form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .form .full{grid-column:1/-1}
-label.f{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;color:var(--ink-2)}
+label.f{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--ink)}
 input.in,textarea.in,select.in{width:100%;border:1px solid var(--line);border-radius:10px;
   padding:10px 12px;font:inherit;font-size:13.5px;background:#fff;color:var(--ink)}
 textarea.in{min-height:80px;resize:vertical}
@@ -263,6 +263,9 @@ textarea.in{min-height:80px;resize:vertical}
 .sop{margin:0 0 16px;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--ink)}
 .sop li{line-height:1.45}
 .sop-gotit{width:100%;justify-content:center}
+
+/* new-proposal form title */
+.form-title{margin:0;font-family:"Poppins",sans-serif;font-size:28px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
 
 /* user-access list */
 .userlist{display:flex;flex-direction:column;gap:8px;margin-top:6px;max-height:54vh;overflow-y:auto}
