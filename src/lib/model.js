@@ -25,6 +25,7 @@ export const S = {
   ready_to_deploy:  { label: 'Ready to Deploy',     owner: 'operation', color: 'sky',     stage: 5 },
   deploying:        { label: 'Deploying',           owner: 'operation', color: 'sky',     stage: 5, timer: true },
   live:             { label: 'Live',                owner: 'operation', color: 'emerald', stage: 5, terminal: true },
+  cancelled:        { label: 'Cancelled',           owner: 'operation', color: 'slate',   stage: 2, terminal: true },
 }
 
 export const STAGES = [
@@ -82,6 +83,7 @@ export const ACTIONS = {
   live:            [],
   rejected:        [],
   final_rejected:  [],
+  cancelled:       [],
 }
 
 export const ROLE_USER = { operation: 'Maya Ops', management: 'Grace Mgr', it: 'Ivan IT', admin: 'Admin User' }

@@ -74,7 +74,7 @@ create table if not exists ai_management_proposals (
   status      text not null default 'draft'
               check (status in ('draft','pending_approval','needs_revision','rejected',
                                 'it_review','building','final_review','needs_rework',
-                                'final_rejected','ready_to_deploy','deploying','live')),
+                                'final_rejected','ready_to_deploy','deploying','live','cancelled')),
   created_by  uuid not null references ai_management_profiles(id),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
@@ -84,6 +84,14 @@ create index if not exists ai_management_proposals_status_idx on ai_management_p
 
 -- evaluation results captured at Build & Test (usage, users, dept, remark)
 alter table ai_management_proposals add column if not exists evaluation jsonb;
+-- allow the 'cancelled' status on existing databases
+do $$
+begin
+  alter table ai_management_proposals drop constraint if exists ai_management_proposals_status_check;
+  alter table ai_management_proposals add constraint ai_management_proposals_status_check
+    check (status in ('draft','pending_approval','needs_revision','rejected','it_review','building',
+                      'final_review','needs_rework','final_rejected','ready_to_deploy','deploying','live','cancelled'));
+end $$;
 
 -- 3. COMMENTS ------------------------------------------------
 create table if not exists ai_management_comments (
@@ -171,6 +179,8 @@ create policy "update proposals by owner" on ai_management_proposals for update
         and ai_management_my_department() = 'operation')
     or (status in ('pending_approval','final_review')
         and ai_management_my_department() = 'management')
+    -- the submitter can cancel/withdraw their own pending proposal
+    or (status = 'pending_approval' and created_by = auth.uid())
   );
 
 -- comments: read all; anyone signed-in can post as themselves.

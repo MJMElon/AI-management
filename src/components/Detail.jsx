@@ -3,7 +3,7 @@ import { DEPTS, S, STAGES, ACTIONS, now, fmtDate, fmtHrs, fmtClock, fmtSize } fr
 
 const lines = (s) => (s || '').split('\n').map((x) => x.trim()).filter(Boolean)
 
-export default function Detail({ p, role, me, canAct, error, onAction, onToggleTimer, onComment, onPreview }) {
+export default function Detail({ p, role, me, canAct, canCancel, error, onAction, onToggleTimer, onPreview }) {
   const st = S[p.status]
   const actions = ACTIONS[p.status] || []
   const problemRows = lines(p.problem)
@@ -21,8 +21,8 @@ export default function Detail({ p, role, me, canAct, error, onAction, onToggleT
 
   const loggedSecs = p.sessions.reduce((a, s) => a + (s.end - s.start) / 1000, 0) + (p.running ? (now() - p.running) / 1000 : 0)
 
-  const [draftCmt, setDraftCmt] = useState('')
   const [note, setNote] = useState('')
+  const [cancelNote, setCancelNote] = useState('')
 
   return (
     <div>
@@ -138,35 +138,18 @@ export default function Detail({ p, role, me, canAct, error, onAction, onToggleT
         </ul>
       </div>
 
-      {/* ===== decision + discussion (bottom) ===== */}
+      {/* ===== decision (bottom) ===== */}
       <div className="section decision">
-        <h3>{canAct && actions.length > 0 ? `${DEPTS[role]?.label} decision` : 'Comments'}</h3>
+        <h3>{`${DEPTS[st.owner]?.label || ''} approval`}</h3>
 
-        {/* discussion thread + comment box */}
-        <div className="thread">
-          {p.comments.length === 0 && <p className="muted" style={{ fontSize: 13, margin: 0 }}>No comments yet.</p>}
-          {p.comments.map((c) => (
-            <div className="cmt" key={c.id}>
-              <div className="h"><b>{c.by}</b> · {DEPTS[c.role]?.label} · {fmtDate(c.at)}</div>
-              <div className="body">{c.body}</div>
-            </div>
-          ))}
-        </div>
-        <div className="row" style={{ marginTop: 12 }}>
-          <input className="in" style={{ flex: 1 }} placeholder="Add a comment…" value={draftCmt}
-            onChange={(e) => setDraftCmt(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && draftCmt.trim()) { onComment(draftCmt.trim()); setDraftCmt('') } }} />
-          <button className="btn" disabled={!draftCmt.trim()} onClick={() => { onComment(draftCmt.trim()); setDraftCmt('') }}>Post</button>
-        </div>
+        {error && <div className="auth-err" style={{ marginBottom: 16 }}>{error}</div>}
 
-        {error && <div className="auth-err" style={{ marginTop: 16 }}>{error}</div>}
-
-        {/* decision buttons (only the team that owns this stage) */}
+        {/* decision: only the team that owns this stage */}
         {actions.length === 0
-          ? <p className="muted" style={{ fontSize: 13.5, margin: '16px 0 0' }}>{p.status === 'live' ? 'Shipped. Nothing left to do. 🎉' : 'This proposal is closed.'}</p>
+          ? <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>{p.status === 'live' ? 'Shipped. Nothing left to do. 🎉' : 'This proposal is closed.'}</p>
           : canAct
             ? (
-              <div style={{ marginTop: 18 }}>
+              <div>
                 <label className="f">Comment / remark <span className="muted">(required to reject or send back)</span></label>
                 <textarea className="in" style={{ minHeight: 70, marginBottom: 12 }} value={note}
                   onChange={(e) => setNote(e.target.value)} placeholder="Write your remark for this decision…" />
@@ -178,7 +161,17 @@ export default function Detail({ p, role, me, canAct, error, onAction, onToggleT
                 </div>
               </div>
             )
-            : <p className="muted" style={{ fontSize: 13.5, margin: '16px 0 0' }}>Waiting on <b>{DEPTS[st.owner].label}</b>.</p>}
+            : <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>Waiting on <b>{DEPTS[st.owner].label}</b>.</p>}
+
+        {/* cancel: the submitter (or admin) can withdraw a pending proposal */}
+        {p.status === 'pending_approval' && canCancel && (
+          <div style={{ marginTop: 18, borderTop: '1px dashed var(--line)', paddingTop: 14 }}>
+            <label className="f">Cancel this proposal</label>
+            <textarea className="in" style={{ minHeight: 56, marginBottom: 10 }} value={cancelNote}
+              onChange={(e) => setCancelNote(e.target.value)} placeholder="Reason for cancelling (optional)…" />
+            <button className="btn btn-rose" onClick={() => { onAction(p, { to: 'cancelled' }, cancelNote.trim()); setCancelNote('') }}>Cancel proposal</button>
+          </div>
+        )}
       </div>
     </div>
   )

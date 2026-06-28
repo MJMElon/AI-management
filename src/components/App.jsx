@@ -183,9 +183,10 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
       {/* Proposal view popup */}
       {sel && (
         <Modal wide onClose={() => { setSelId(null); setOpErr(null) }}>
-          <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)} error={opErr}
+          <Detail key={sel.id} p={sel} role={role} me={me} canAct={canAct(sel)}
+            canCancel={role === 'operation' || role === 'admin'} error={opErr}
             onAction={(p, a, note) => applyAction(p, a, note)} onToggleTimer={() => toggleTimer(sel)}
-            onComment={(b) => addComment(sel, b)} onPreview={setPreview} />
+            onPreview={setPreview} />
         </Modal>
       )}
 

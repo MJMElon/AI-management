@@ -31,7 +31,7 @@ export default function SettingsPage({ mode, users, userId, role, busy, error, o
             <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>Set what each person can access. Only an Administrator can change other people’s access.</p>
             {error && <div className="auth-err">{error}</div>}
             {!users && <div className="loading" style={{ padding: '20px 0' }}>Loading users…</div>}
-            {users && users.length === 0 && <p className="muted">No users yet.</p>}
+            {users && users.length === 0 && <p className="muted">No users found yet. Each person appears here after they sign in once (or after running the profile backfill SQL).</p>}
             {users && users.length > 0 && (
               <div className="userlist" style={{ maxHeight: 'none' }}>
                 {users.map((u) => (
