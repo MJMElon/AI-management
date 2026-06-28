@@ -29,30 +29,31 @@ export const S = {
 
 export const STAGES = [
   { n: 1, label: 'Proposal', owner: 'operation', sop: [
-    'Spot a repetitive or painful task that’s worth automating.',
-    'Click “+ New proposal” and fill in the title, the problem (point form), and the value-created calculation.',
-    'List the planned tools and attach any slides or mockups.',
-    'Submit the proposal — it goes to the Management Team for approval.',
+    'Spot a painful task that’s worth creating a new system for / automating.',
+    'Submit your proposal by filling in the “+ New proposal” form.',
+    'Attach as complete an attachment as possible to help others understand your idea (e.g. presentation slides, flowchart or mindmap).',
+    'Submit and wait for the Management Team’s approval.',
   ] },
   { n: 2, label: 'Approval', owner: 'management', sop: [
+    'Each month the Management Team holds the approval meeting.',
     'Review the problem statement and the value-created calculation.',
-    'Check the idea fits company priorities and is worth the effort.',
-    'Approve to send it for IT Review, request changes, or reject with a reason.',
+    'Check the idea fits the company’s direction.',
+    'Check for duplicate work (the idea may already exist, or another team proposed the same).',
+    'Approve or reject the proposal.',
   ] },
   { n: 3, label: 'IT Review', owner: 'it', sop: [
-    'Assess technical feasibility, security, and any data access needed.',
     'Confirm the planned tools are acceptable and supportable.',
-    'Clear it for build, or send it back with concerns.',
+    'Review and advise on the framework.',
   ] },
   { n: 4, label: 'Build & Test', owner: 'operation', sop: [
-    'Start the timer when you begin building.',
-    'Build the solution and test it thoroughly against the stated problem.',
-    'Stop the timer; when it’s ready, submit for final approval.',
+    'The Operation Team builds the system and brings it to testing.',
+    'Amend the system accordingly if problems occur during testing.',
+    'Fill in the evaluation form before the next step, then submit it in the system for the Management Team to approve before it goes to IT for deploy & go-live.',
   ] },
   { n: 5, label: 'Deploy & Go Live', owner: 'it', sop: [
-    'Once final-approved, IT prepares the deployment.',
-    'Deploy to production and verify everything works.',
-    'Mark it as live — the proposal is now delivered. 🎉',
+    'The evaluated project request is accepted and added to the IT department’s project list.',
+    'IT prepares the deployment and deploys it to production.',
+    'Maintain the system.',
   ] },
 ]
 

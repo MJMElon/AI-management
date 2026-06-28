@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-export default function Auth({ sb, onOpenSettings }) {
+export default function Auth({ sb }) {
   const [mode, setMode] = useState('in') // in | up
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
@@ -28,9 +28,8 @@ export default function Auth({ sb, onOpenSettings }) {
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={submit}>
-        <div className="brandrow"><span className="mark">Vibe Proposals</span><span className="tag">idea → go-live</span></div>
-        <h1>{mode === 'in' ? 'Sign in' : 'Create account'}</h1>
-        <p className="sub">{mode === 'in' ? 'Use your work email to access the proposal board.' : 'New here? Set up your account in a few seconds.'}</p>
+        <div className="brandrow"><span className="mark">MJM Group</span></div>
+        <h1 style={{ marginBottom: 16 }}>{mode === 'in' ? 'Sign in' : 'Create account'}</h1>
         {err && <div className="auth-err">{err}</div>}
         {msg && <div className="auth-msg">{msg}</div>}
         {mode === 'up' && (
@@ -54,9 +53,6 @@ export default function Auth({ sb, onOpenSettings }) {
           {mode === 'in'
             ? <span>No account? <button type="button" onClick={() => { setMode('up'); setErr(''); setMsg('') }}>Create one</button></span>
             : <span>Already have one? <button type="button" onClick={() => { setMode('in'); setErr(''); setMsg('') }}>Sign in</button></span>}
-        </div>
-        <div className="auth-toggle">
-          <button type="button" onClick={onOpenSettings}>Use a different database / demo mode</button>
         </div>
       </form>
     </div>

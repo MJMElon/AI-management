@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { S, STAGES, DEPTS, fmtDate } from '../lib/model.js'
+import { S, DEPTS, fmtDate } from '../lib/model.js'
 import { T } from '../lib/tables.js'
 import Flowchart from './Flowchart.jsx'
 import Detail from './Detail.jsx'
@@ -142,7 +142,7 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
       countByStage={countByStage}
       activeStage={null}
       onSubmit={() => setCreating(true)}
-      onPickStage={(n) => setSopStage(STAGES.find((s) => s.n === n))}
+      onPickStage={(n) => setSopStage(n)}
       canCreate={canCreate}
     />
   )
@@ -219,7 +219,7 @@ export default function App({ mode, me, role, setRole, api, sb, userId, onSignOu
       )}
 
       {/* Stage SOP popup */}
-      {sopStage && <StageInfoModal stage={sopStage} onClose={() => setSopStage(null)} />}
+      {sopStage && <StageInfoModal startN={sopStage} onClose={() => setSopStage(null)} />}
 
       {/* User access settings */}
       {access && (

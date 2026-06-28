@@ -69,7 +69,7 @@ export default function Root() {
     } else if (session === undefined || (session && !profile)) {
       content = <div className="loading">Connecting…</div>
     } else if (!session) {
-      content = <Auth sb={sb} onOpenSettings={() => setSettings(true)} />
+      content = <Auth sb={sb} />
     } else {
       content = (
         <App mode="live" me={profile.name} role={profile.department} setRole={changeRole} api={liveApi} sb={sb}
